@@ -18,6 +18,13 @@ enum ProvedorAuth {
   GOOGLE
 }
 
+enum StatusFicha {
+  AGENDADA
+  EM_PREENCHIMENTO
+  CONCLUIDA
+  CANCELADA
+}
+
 /// Identidade autorizada a acessar a plataforma.
 model Conta {
   id           Int       @id @default(autoincrement())
@@ -30,6 +37,7 @@ model Conta {
   papeis      ContaPapel[]
   identidades IdentidadeAuth[]
   sessoes     Sessao[]
+  medico      Medico?
 
   @@map("contas")
 }
@@ -73,4 +81,110 @@ model Sessao {
   @@index([contaId])
   @@index([expiraEm])
   @@map("sessoes")
+}
+
+/// Perfil profissional de uma conta que possui o papel MEDICO.
+model Medico {
+  id           Int       @id @default(autoincrement())
+  contaId      Int       @unique @map("conta_id")
+  crm          String    @unique @db.VarChar(50)
+  criadoEm     DateTime  @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm DateTime  @updatedAt @map("atualizado_em") @db.Timestamptz(6)
+  inativadoEm  DateTime? @map("inativado_em") @db.Timestamptz(6)
+  conta        Conta     @relation(fields: [contaId], references: [id], onDelete: Restrict)
+
+  telefones Telefone[]
+  fichas    FichaEpicritica[]
+
+  @@map("medicos")
+}
+
+model Pais {
+  id     Int      @id @default(autoincrement())
+  nome   String   @unique @db.VarChar(100)
+  estados Estado[]
+
+  @@map("paises")
+}
+
+model Estado {
+  id       Int       @id @default(autoincrement())
+  paisId   Int       @map("pais_id")
+  nome     String    @db.VarChar(100)
+  sigla    String    @db.VarChar(10)
+  pais     Pais      @relation(fields: [paisId], references: [id], onDelete: Restrict)
+  pacientes Paciente[]
+
+  @@unique([paisId, sigla])
+  @@map("estados")
+}
+
+model Paciente {
+  id             Int       @id @default(autoincrement())
+  estadoId       Int?      @map("estado_id")
+  cpf            String?   @unique @db.VarChar(11)
+  nome           String    @db.VarChar(255)
+  municipio      String    @db.VarChar(120)
+  dataNascimento DateTime  @map("data_nascimento") @db.Date
+  genero         String    @db.VarChar(50)
+  criadoEm       DateTime  @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm   DateTime  @updatedAt @map("atualizado_em") @db.Timestamptz(6)
+  inativadoEm    DateTime? @map("inativado_em") @db.Timestamptz(6)
+  estado         Estado?   @relation(fields: [estadoId], references: [id], onDelete: Restrict)
+
+  telefones Telefone[]
+  fichas    FichaEpicritica[]
+
+  @@index([estadoId])
+  @@index([nome])
+  @@map("pacientes")
+}
+
+/// Pertence exclusivamente a um paciente ou a um medico.
+model Telefone {
+  id          Int       @id @default(autoincrement())
+  pacienteId  Int?      @map("paciente_id")
+  medicoId    Int?      @map("medico_id")
+  telefone    String    @db.VarChar(30)
+  criadoEm    DateTime  @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm DateTime @updatedAt @map("atualizado_em") @db.Timestamptz(6)
+  paciente    Paciente? @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
+  medico      Medico?   @relation(fields: [medicoId], references: [id], onDelete: Restrict)
+
+  @@index([pacienteId])
+  @@index([medicoId])
+  @@map("telefones")
+}
+
+model FichaEpicritica {
+  id                        Int         @id @default(autoincrement())
+  pacienteId                Int         @map("paciente_id")
+  medicoId                  Int         @map("medico_id")
+  dataHoraPrevista          DateTime    @map("data_hora_prevista") @db.Timestamptz(6)
+  status                    StatusFicha @default(AGENDADA)
+  observacoes               String?
+  mecanismoLesao            String?     @map("mecanismo_lesao")
+  dataInjuriaTraqueal       DateTime?   @map("data_injuria_traqueal") @db.Date
+  vocaliza                  Boolean     @default(false)
+  traqueostomizado          Boolean     @default(false)
+  possuiComorbidades        Boolean     @default(false) @map("possui_comorbidades")
+  comorbidadesDescricao     String?     @map("comorbidades_descricao")
+  possuiSequelas            Boolean     @default(false) @map("possui_sequelas")
+  sequelasDescricao         String?     @map("sequelas_descricao")
+  usaMedicamentos           Boolean     @default(false) @map("usa_medicamentos")
+  medicamentosDescricao     String?     @map("medicamentos_descricao")
+  possuiLaringoscopia       Boolean     @default(false) @map("possui_laringoscopia")
+  achadoLaringoscopia       String?     @map("achado_laringoscopia")
+  particularidades          String?
+  criadoEm                  DateTime    @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm              DateTime    @updatedAt @map("atualizado_em") @db.Timestamptz(6)
+  inativadoEm               DateTime?   @map("inativado_em") @db.Timestamptz(6)
+  paciente                  Paciente    @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
+  medico                    Medico      @relation(fields: [medicoId], references: [id], onDelete: Restrict)
+
+  @@index([pacienteId])
+  @@index([medicoId])
+  @@index([status])
+  @@index([dataHoraPrevista])
+  @@map("fichas_epicriticas")
 }
