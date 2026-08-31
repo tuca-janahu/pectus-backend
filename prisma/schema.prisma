@@ -1,0 +1,76 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Papel {
+  ADMIN
+  MEDICO
+}
+
+enum ProvedorAuth {
+  LOCAL
+  GOOGLE
+}
+
+/// Identidade autorizada a acessar a plataforma.
+model Conta {
+  id           Int       @id @default(autoincrement())
+  nome         String
+  email        String    @unique @db.VarChar(320)
+  criadoEm     DateTime  @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm DateTime  @updatedAt @map("atualizado_em") @db.Timestamptz(6)
+  inativadoEm  DateTime? @map("inativado_em") @db.Timestamptz(6)
+
+  papeis      ContaPapel[]
+  identidades IdentidadeAuth[]
+  sessoes     Sessao[]
+
+  @@map("contas")
+}
+
+/// Uma conta pode acumular os papeis ADMIN e MEDICO.
+model ContaPapel {
+  contaId Int   @map("conta_id")
+  papel   Papel
+  conta   Conta @relation(fields: [contaId], references: [id], onDelete: Restrict)
+
+  @@id([contaId, papel])
+  @@map("contas_papeis")
+}
+
+/// Credenciais locais e identidades federadas vinculadas a uma conta autorizada.
+model IdentidadeAuth {
+  id           Int          @id @default(autoincrement())
+  contaId      Int          @map("conta_id")
+  provedor     ProvedorAuth
+  provedorId   String?      @map("provedor_id")
+  senhaHash    String?      @map("senha_hash")
+  criadoEm     DateTime     @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm DateTime     @updatedAt @map("atualizado_em") @db.Timestamptz(6)
+  conta        Conta        @relation(fields: [contaId], references: [id], onDelete: Restrict)
+
+  @@unique([contaId, provedor])
+  @@unique([provedor, provedorId])
+  @@map("identidades_auth")
+}
+
+/// Apenas o hash do refresh token e persistido.
+model Sessao {
+  id               Int       @id @default(autoincrement())
+  contaId          Int       @map("conta_id")
+  refreshTokenHash String    @map("refresh_token_hash")
+  expiraEm         DateTime  @map("expira_em") @db.Timestamptz(6)
+  revogadoEm       DateTime? @map("revogado_em") @db.Timestamptz(6)
+  criadoEm         DateTime  @default(now()) @map("criado_em") @db.Timestamptz(6)
+  conta            Conta     @relation(fields: [contaId], references: [id], onDelete: Restrict)
+
+  @@index([contaId])
+  @@index([expiraEm])
+  @@map("sessoes")
+}
