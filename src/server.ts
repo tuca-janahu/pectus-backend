@@ -1,9 +1,12 @@
 import express from "express";
+import authRouter from "./routes/authRoutes";
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
 
 app.use(express.json());
+
+app.use("/auth", authRouter);
 
 app.get("/health", (_req, res) => {
   res.status(200).json({ status: "ok" });
