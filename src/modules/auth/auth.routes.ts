@@ -5,8 +5,8 @@ import {
   refreshTokensFor,
   revokeRefreshToken,
   getUserById,
-} from "../auth";
-import { authenticate } from "../middleware/authMiddleware";
+} from "../../config/auth";
+import { authenticate } from "../../middleware/authMiddleware";
 
 const router = express.Router();
 

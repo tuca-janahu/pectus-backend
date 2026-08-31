@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { verifyAccessToken, getUserById } from "../auth";
+import { verifyAccessToken, getUserById } from "../config/auth";
 
 export function authenticate(req: Request, res: Response, next: NextFunction) {
   const auth = req.headers["authorization"] as string | undefined;
