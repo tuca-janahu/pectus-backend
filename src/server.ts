@@ -9,7 +9,7 @@ app.use(express.json());
 app.use("/auth", authRouter);
 
 app.get("/health", (_req, res) => {
-  res.status(200).json({ status: "ok" });
+  res.status(200).json({ status: "ok, pectus rodando" });
 });
 
 app.listen(port, () => {
