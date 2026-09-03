@@ -4,3 +4,4 @@ dist
 src/generated/prisma
 .npm-cache/
 npm-debug.log*
+.vscode
