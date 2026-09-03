@@ -1,57 +1,16 @@
-import express from "express";
-import {
-  register,
-  login,
-  refreshTokensFor,
-  revokeRefreshToken,
-  getUserById,
-} from "../../config/auth";
+import { Router } from "express";
+
 import { authenticate } from "../../middleware/authMiddleware";
+import { AuthController } from "./auth.controller";
+import { authService } from "./auth.service";
 
-const router = express.Router();
+const router = Router();
+const authController = new AuthController(authService);
 
-router.post("/register", async (req, res) => {
-  try {
-    const conta = await register(req.body ?? {});
-    res.status(201).json(conta);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-router.post("/login", async (req, res) => {
-  const { email, password } = req.body || {};
-  if (!email || !password) return res.status(400).json({ error: "Email ou senha ausentes" });
-
-  try {
-    const tokens = await login(email, password);
-    res.json(tokens);
-  } catch (err: any) {
-    res.status(401).json({ error: err.message });
-  }
-});
-
-router.post("/refresh", async (req, res) => {
-  const { refreshToken } = req.body || {};
-  if (!refreshToken) return res.status(400).json({ error: "Refresh token ausente" });
-
-  try {
-    const tokens = await refreshTokensFor(refreshToken);
-    res.json(tokens);
-  } catch (err: any) {
-    res.status(401).json({ error: err.message });
-  }
-});
-
-router.post("/logout", (req, res) => {
-  const { refreshToken } = req.body || {};
-  if (!refreshToken) return res.status(400).json({ error: "Refresh token ausente" });
-  revokeRefreshToken(refreshToken);
-  res.status(204).end();
-});
-
-router.get("/me", authenticate, (req, res) => {
-  res.json(res.locals.user);
-});
+router.post("/register", authController.register);
+router.post("/login", authController.login);
+router.post("/refresh", authController.refresh);
+router.post("/logout", authController.logout);
+router.get("/me", authenticate, authController.me);
 
 export default router;
