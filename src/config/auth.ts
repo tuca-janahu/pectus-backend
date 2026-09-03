@@ -1,27 +1,24 @@
 import bcrypt from "bcryptjs";
 import * as jwt from "jsonwebtoken";
 import { randomUUID } from "crypto";
+import { prisma } from "../db/prisma";
+import { PrismaContaRepository } from "../modules/contas/conta.repository";
+import { RegisterService } from "../modules/contas/register.service";
+import type { RegisterInput } from "../modules/contas/register.schema";
 
 type User = { id: string; email: string; passwordHash: string };
 
 const users = new Map<string, User>();
 const refreshTokens = new Map<string, string>();
+const registerService = new RegisterService(new PrismaContaRepository(prisma));
 
 //Lembrar de transformar JWT em Váriavel de ambiente!
 const JWT_SECRET = process.env.JWT_SECRET || "change_this_secret";
 const ACCESS_EXPIRES = process.env.ACCESS_EXPIRES || "15m";
 const REFRESH_EXPIRES = process.env.REFRESH_EXPIRES || "7d";
 
-export async function register(email: string, password: string) {
-  if (users.has(email)) {
-    throw new Error("User already exists");
-  }
-
-  const passwordHash = await bcrypt.hash(password, 10);
-  const id = randomUUID();
-  const user: User = { id, email, passwordHash };
-  users.set(email, user);
-  return { id: user.id, email: user.email };
+export async function register(input: RegisterInput) {
+  return registerService.execute(input);
 }
 
 export async function login(email: string, password: string) {
