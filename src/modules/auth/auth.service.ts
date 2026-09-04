@@ -18,17 +18,17 @@ export class AuthService {
   }
 
   async login(email: string, password: string) {
-    const conta = await prisma.conta.findUnique({ where: { email: email.toLowerCase() }, include: { papeis: true, identidades: { where: { provedor: "LOCAL" } } } });
+    const conta = await prisma.conta.findUnique({ where: { email: email.toLowerCase() }, include: { papeis: true, medico: true, identidades: { where: { provedor: "LOCAL" } } } });
     const identity = conta?.identidades[0];
     if (!conta || conta.inativadoEm || !identity?.senhaHash || !(await bcrypt.compare(password, identity.senhaHash))) throw new Error("Credenciais invalidas");
-    return this.createSession(conta.id, conta.email, conta.papeis.map(({ papel }) => papel));
+    return this.createSession(conta);
   }
 
   async refresh(refreshToken: string) {
-    const session = await prisma.sessao.findFirst({ where: { refreshTokenHash: hash(refreshToken), revogadoEm: null, expiraEm: { gt: new Date() } }, include: { conta: { include: { papeis: true } } } });
+    const session = await prisma.sessao.findFirst({ where: { refreshTokenHash: hash(refreshToken), revogadoEm: null, expiraEm: { gt: new Date() } }, include: { conta: { include: { papeis: true, medico: true } } } });
     if (!session || session.conta.inativadoEm) throw new Error("Refresh token invalido");
     await prisma.sessao.update({ where: { id: session.id }, data: { revogadoEm: new Date() } });
-    return this.createSession(session.contaId, session.conta.email, session.conta.papeis.map(({ papel }) => papel));
+    return this.createSession(session.conta);
   }
 
   async logout(refreshToken: string) {
@@ -39,16 +39,27 @@ export class AuthService {
     try {
       const payload = jwt.verify(token, authConfig.jwtSecret);
       if (typeof payload === "string" || typeof payload.sub !== "string") return null;
-      const conta = await prisma.conta.findUnique({ where: { id: Number(payload.sub) }, include: { papeis: true } });
+      const conta = await prisma.conta.findUnique({ where: { id: Number(payload.sub) }, include: { papeis: true, medico: true } });
       if (!conta || conta.inativadoEm) return null;
-      return { id: conta.id, email: conta.email, roles: conta.papeis.map(({ papel }) => papel) };
+      return this.publicConta(conta);
     } catch { return null; }
   }
 
-  private async createSession(contaId: number, email: string, roles: string[]) {
+  private publicConta(conta: { id: number; email: string; nome: string; papeis: { papel: string }[]; medico: { crm: string } | null }) {
+    return {
+      id: conta.id,
+      email: conta.email,
+      nome: conta.nome,
+      roles: conta.papeis.map(({ papel }) => papel),
+      medico: conta.medico ? { crm: conta.medico.crm } : null,
+    };
+  }
+
+  private async createSession(conta: { id: number; email: string; nome: string; papeis: { papel: string }[]; medico: { crm: string } | null }) {
     const refreshToken = randomBytes(48).toString("base64url");
-    await prisma.sessao.create({ data: { contaId, refreshTokenHash: hash(refreshToken), expiraEm: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) } });
-    return { accessToken: jwt.sign({ sub: String(contaId), roles }, authConfig.jwtSecret, { expiresIn: authConfig.accessExpiresIn }), refreshToken, conta: { id: contaId, email, roles } };
+    const roles = conta.papeis.map(({ papel }) => papel);
+    await prisma.sessao.create({ data: { contaId: conta.id, refreshTokenHash: hash(refreshToken), expiraEm: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) } });
+    return { accessToken: jwt.sign({ sub: String(conta.id), roles }, authConfig.jwtSecret, { expiresIn: authConfig.accessExpiresIn }), refreshToken, conta: this.publicConta(conta) };
   }
 }
 
