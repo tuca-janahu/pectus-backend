@@ -40,8 +40,9 @@ describe("RegisterService", () => {
       roles: ["ADMIN"],
     });
 
-    expect(conta.papeis).toEqual([{ papel: "ADMIN" }]);
-    expect(conta.medico).toBeNull();
+    expect(conta.conta.papeis).toEqual([{ papel: "ADMIN" }]);
+    expect(conta.conta.medico).toBeNull();
+    expect(conta.activationToken).toHaveLength(64);
     expect(repository.receivedData?.email).toBe("admin@example.com");
   });
 
@@ -59,8 +60,8 @@ describe("RegisterService", () => {
       },
     });
 
-    expect(conta.papeis).toEqual([{ papel: "ADMIN" }, { papel: "MEDICO" }]);
-    expect(conta.medico).toEqual({
+    expect(conta.conta.papeis).toEqual([{ papel: "ADMIN" }, { papel: "MEDICO" }]);
+    expect(conta.conta.medico).toEqual({
       id: 1,
       crm: "123456-BA",
       telefones: [{ telefone: "71999999999" }],

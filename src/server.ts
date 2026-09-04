@@ -1,5 +1,6 @@
 import express from "express";
 import authRouter from "./modules/auth/auth.routes";
+import contasRouter from "./modules/contas/contas.routes";
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
@@ -7,6 +8,7 @@ const port = Number(process.env.PORT) || 3000;
 app.use(express.json());
 
 app.use("/auth", authRouter);
+app.use("/contas", contasRouter);
 
 app.get("/health", (_req, res) => {
   res.status(200).json({ status: "ok" });

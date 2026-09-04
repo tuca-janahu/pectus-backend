@@ -1,19 +1,19 @@
-import { Request, Response, NextFunction } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { authService } from "../modules/auth/auth.service";
 
-export function authenticate(req: Request, res: Response, next: NextFunction) {
-  const auth = req.headers["authorization"] as string | undefined;
-  if (!auth || !auth.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Token não fornecido" });
-  }
-
-  const token = auth.slice("Bearer ".length);
-  const payload = authService.verifyAccessToken(token);
-  if (!payload) return res.status(401).json({ error: "Token inválido" });
-
-  const user = authService.getUserById(payload.sub);
-  if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
-
-  res.locals.user = { id: user.id, email: user.email };
+export async function authenticate(req: Request, res: Response, next: NextFunction) {
+  const authorization = req.headers.authorization;
+  if (!authorization?.startsWith("Bearer ")) return res.status(401).json({ error: "Token nao fornecido" });
+  const user = await authService.authenticate(authorization.slice(7));
+  if (!user) return res.status(401).json({ error: "Token invalido" });
+  res.locals.user = user;
   next();
+}
+
+export function authorize(...roles: string[]) {
+  return (_req: Request, res: Response, next: NextFunction) => {
+    const user = res.locals.user as { roles?: string[] } | undefined;
+    if (!user?.roles?.some((role) => roles.includes(role))) return res.status(403).json({ error: "FORBIDDEN" });
+    next();
+  };
 }

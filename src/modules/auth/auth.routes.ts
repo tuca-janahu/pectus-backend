@@ -7,7 +7,7 @@ import { authService } from "./auth.service";
 const router = Router();
 const authController = new AuthController(authService);
 
-router.post("/register", authController.register);
+router.post("/activate", authController.activate);
 router.post("/login", authController.login);
 router.post("/refresh", authController.refresh);
 router.post("/logout", authController.logout);

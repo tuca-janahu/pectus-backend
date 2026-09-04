@@ -15,13 +15,19 @@ export interface ContaCriada {
 }
 
 export interface ContaRepository {
-  create(data: RegisterData): Promise<ContaCriada>;
+  create(
+    data: RegisterData,
+    activation: { tokenHash: string; expiraEm: Date },
+  ): Promise<ContaCriada>;
 }
 
 export class PrismaContaRepository implements ContaRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async create({ nome, email, roles, medico }: RegisterData) {
+  async create(
+    { nome, email, roles, medico }: RegisterData,
+    activation: { tokenHash: string; expiraEm: Date },
+  ) {
     return this.prisma.conta.create({
       data: {
         nome,
@@ -39,6 +45,9 @@ export class PrismaContaRepository implements ContaRepository {
               },
             }
           : undefined,
+        tokensAtivacao: {
+          create: activation,
+        },
       },
       include: {
         papeis: true,

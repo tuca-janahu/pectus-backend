@@ -23,7 +23,7 @@ export const registerSchema = z
       context.addIssue({
         code: "custom",
         path: ["roles"],
-        message: "Os papeis nao podem se repetir.",
+        message: "Os papeis não podem se repetir.",
       });
     }
 

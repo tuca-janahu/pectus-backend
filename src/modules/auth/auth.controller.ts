@@ -9,10 +9,12 @@ function errorMessage(error: unknown) {
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  register = async (req: Request, res: Response) => {
+  activate = async (req: Request, res: Response) => {
     try {
-      const conta = await this.authService.register(req.body ?? {});
-      res.status(201).json(conta);
+      const { token, password } = req.body ?? {};
+      if (!token || !password) return res.status(400).json({ error: "Token ou senha ausentes" });
+      await this.authService.activate(token, password);
+      res.status(204).end();
     } catch (error) {
       res.status(400).json({ error: errorMessage(error) });
     }
@@ -39,20 +41,20 @@ export class AuthController {
     }
 
     try {
-      const tokens = await this.authService.refreshTokensFor(refreshToken);
+      const tokens = await this.authService.refresh(refreshToken);
       return res.json(tokens);
     } catch (error) {
       return res.status(401).json({ error: errorMessage(error) });
     }
   };
 
-  logout = (req: Request, res: Response) => {
+  logout = async (req: Request, res: Response) => {
     const { refreshToken } = req.body ?? {};
     if (!refreshToken) {
       return res.status(400).json({ error: "Refresh token ausente" });
     }
 
-    this.authService.logout(refreshToken);
+    await this.authService.logout(refreshToken);
     return res.status(204).end();
   };
 
