@@ -1,9 +1,10 @@
 import type { Request, Response } from "express";
 import { prisma } from "../../db/prisma";
+import { mailer } from "../email";
 import { PrismaContaRepository } from "./conta.repository";
 import { RegisterService } from "./register.service";
 
-const registerService = new RegisterService(new PrismaContaRepository(prisma));
+const registerService = new RegisterService(new PrismaContaRepository(prisma), mailer);
 
 export async function createAccount(req: Request, res: Response) {
   try {

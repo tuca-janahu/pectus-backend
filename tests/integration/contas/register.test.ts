@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { createPrismaClient } from "../../../src/db/prisma";
 import { RegisterService } from "../../../src/modules/contas/register.service";
 import { PrismaContaRepository } from "../../../src/modules/contas/conta.repository";
+import { NoopMailer } from "../../../src/modules/email/noop-mailer";
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -11,7 +12,7 @@ if (!databaseUrl) {
 }
 
 const testPrisma = createPrismaClient(databaseUrl);
-const service = new RegisterService(new PrismaContaRepository(testPrisma));
+const service = new RegisterService(new PrismaContaRepository(testPrisma), new NoopMailer());
 
 describe("RegisterService", () => {
   beforeAll(async () => {
@@ -19,6 +20,7 @@ describe("RegisterService", () => {
   });
 
   afterEach(async () => {
+    await testPrisma.tokenAtivacao.deleteMany();
     await testPrisma.telefone.deleteMany();
     await testPrisma.fichaEpicritica.deleteMany();
     await testPrisma.medico.deleteMany();
@@ -31,19 +33,20 @@ describe("RegisterService", () => {
   });
 
   it("registra uma conta ADMIN sem perfil medico", async () => {
-    const conta = await service.execute({
+    const resultado = await service.execute({
       nome: "Administradora",
       email: "admin@example.com",
       roles: ["ADMIN"],
     });
 
-    expect(conta.email).toBe("admin@example.com");
-    expect(conta.papeis.map(({ papel }) => papel)).toEqual(["ADMIN"]);
-    expect(conta.medico).toBeNull();
+    expect(resultado.conta.email).toBe("admin@example.com");
+    expect(resultado.conta.papeis.map(({ papel }) => papel)).toEqual(["ADMIN"]);
+    expect(resultado.conta.medico).toBeNull();
+    expect(resultado.activationToken).toHaveLength(64);
   });
 
   it("registra uma conta ADMIN e MEDICO com CRM e telefones", async () => {
-    const conta = await service.execute({
+    const resultado = await service.execute({
       nome: "Dra. Ana",
       email: "ana@example.com",
       roles: ["ADMIN", "MEDICO"],
@@ -53,9 +56,9 @@ describe("RegisterService", () => {
       },
     });
 
-    expect(conta.papeis.map(({ papel }) => papel).sort()).toEqual(["ADMIN", "MEDICO"]);
-    expect(conta.medico?.crm).toBe("123456-BA");
-    expect(conta.medico?.telefones).toHaveLength(2);
+    expect(resultado.conta.papeis.map(({ papel }) => papel).sort()).toEqual(["ADMIN", "MEDICO"]);
+    expect(resultado.conta.medico?.crm).toBe("123456-BA");
+    expect(resultado.conta.medico?.telefones).toHaveLength(2);
   });
 
   it("rejeita uma conta MEDICO sem perfil profissional", async () => {

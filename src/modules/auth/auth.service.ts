@@ -1,10 +1,9 @@
-import { createHash, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import * as jwt from "jsonwebtoken";
 import { authConfig } from "../../config/auth";
 import { prisma } from "../../db/prisma";
-
-const hash = (value: string) => createHash("sha256").update(value).digest("hex");
+import { hashToken as hash } from "./token-hash";
 
 export class AuthService {
   async activate(token: string, password: string) {

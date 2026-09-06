@@ -10,17 +10,18 @@ datasource db {
 
 /// Identidade autorizada a acessar a plataforma.
 model Conta {
-  id             Int              @id @default(autoincrement())
-  nome           String
-  email          String           @unique @db.VarChar(320)
-  criadoEm       DateTime         @default(now()) @map("criado_em") @db.Timestamptz(6)
-  atualizadoEm   DateTime         @updatedAt @map("atualizado_em") @db.Timestamptz(6)
-  inativadoEm    DateTime?        @map("inativado_em") @db.Timestamptz(6)
-  papeis         ContaPapel[]
-  identidades    IdentidadeAuth[]
-  medico         Medico?
-  sessoes        Sessao[]
-  tokensAtivacao TokenAtivacao[]
+  id                     Int                     @id @default(autoincrement())
+  nome                   String
+  email                  String                  @unique @db.VarChar(320)
+  criadoEm               DateTime                @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm           DateTime                @updatedAt @map("atualizado_em") @db.Timestamptz(6)
+  inativadoEm            DateTime?               @map("inativado_em") @db.Timestamptz(6)
+  papeis                 ContaPapel[]
+  identidades            IdentidadeAuth[]
+  medico                 Medico?
+  sessoes                Sessao[]
+  tokensAtivacao         TokenAtivacao[]
+  tokensRedefinicaoSenha TokenRedefinicaoSenha[]
 
   @@map("contas")
 }
@@ -78,6 +79,20 @@ model TokenAtivacao {
   @@index([contaId])
   @@index([expiraEm])
   @@map("tokens_ativacao")
+}
+
+model TokenRedefinicaoSenha {
+  id        Int       @id @default(autoincrement())
+  contaId   Int       @map("conta_id")
+  tokenHash String    @unique @map("token_hash")
+  expiraEm  DateTime  @map("expira_em") @db.Timestamptz(6)
+  usadoEm   DateTime? @map("usado_em") @db.Timestamptz(6)
+  criadoEm  DateTime  @default(now()) @map("criado_em") @db.Timestamptz(6)
+  conta     Conta     @relation(fields: [contaId], references: [id])
+
+  @@index([contaId])
+  @@index([expiraEm])
+  @@map("tokens_redefinicao_senha")
 }
 
 /// Perfil profissional de uma conta que possui o papel MEDICO.
