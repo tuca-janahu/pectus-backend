@@ -3,17 +3,37 @@ import bcrypt from "bcryptjs";
 import * as jwt from "jsonwebtoken";
 import { authConfig } from "../../config/auth";
 import { prisma } from "../../db/prisma";
+import type { Prisma } from "../../generated/prisma/client";
 import { hashToken as hash } from "./token-hash";
 
 export class AuthService {
   async activate(token: string, password: string) {
-    const activation = await prisma.tokenAtivacao.findUnique({ where: { tokenHash: hash(token) }, include: { conta: true } });
-    if (!activation || activation.usadoEm || activation.expiraEm <= new Date() || activation.conta.inativadoEm) throw new Error("Token de ativacao invalido ou expirado");
+    const activation = await prisma.tokenAtivacao.findUnique({
+      where: { tokenHash: hash(token) },
+      include: { conta: { include: { papeis: true, medico: true } } },
+    });
+    if (!activation || activation.usadoEm || activation.expiraEm <= new Date() || activation.conta.inativadoEm) {
+      throw new Error("Token de ativacao invalido ou expirado");
+    }
+
     const senhaHash = await bcrypt.hash(password, 12);
-    await prisma.$transaction([
-      prisma.identidadeAuth.upsert({ where: { contaId_provedor: { contaId: activation.contaId, provedor: "LOCAL" } }, create: { contaId: activation.contaId, provedor: "LOCAL", senhaHash }, update: { senhaHash } }),
-      prisma.tokenAtivacao.update({ where: { id: activation.id }, data: { usadoEm: new Date() } }),
-    ]);
+    return prisma.$transaction(async (tx) => {
+      // Consome o token condicionalmente para impedir que duas requisicoes
+      // concorrentes criem sessoes para a mesma ativacao.
+      const tokenConsumido = await tx.tokenAtivacao.updateMany({
+        where: { id: activation.id, usadoEm: null, expiraEm: { gt: new Date() } },
+        data: { usadoEm: new Date() },
+      });
+      if (tokenConsumido.count !== 1) throw new Error("Token de ativacao invalido ou expirado");
+
+      await tx.identidadeAuth.upsert({
+        where: { contaId_provedor: { contaId: activation.contaId, provedor: "LOCAL" } },
+        create: { contaId: activation.contaId, provedor: "LOCAL", senhaHash },
+        update: { senhaHash },
+      });
+
+      return this.createSession(activation.conta, tx);
+    });
   }
 
   async login(email: string, password: string) {
@@ -54,10 +74,13 @@ export class AuthService {
     };
   }
 
-  private async createSession(conta: { id: number; email: string; nome: string; papeis: { papel: string }[]; medico: { crm: string } | null }) {
+  private async createSession(
+    conta: { id: number; email: string; nome: string; papeis: { papel: string }[]; medico: { crm: string } | null },
+    db: Pick<Prisma.TransactionClient, "sessao"> = prisma,
+  ) {
     const refreshToken = randomBytes(48).toString("base64url");
     const roles = conta.papeis.map(({ papel }) => papel);
-    await prisma.sessao.create({ data: { contaId: conta.id, refreshTokenHash: hash(refreshToken), expiraEm: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) } });
+    await db.sessao.create({ data: { contaId: conta.id, refreshTokenHash: hash(refreshToken), expiraEm: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) } });
     return { accessToken: jwt.sign({ sub: String(conta.id), roles }, authConfig.jwtSecret, { expiresIn: authConfig.accessExpiresIn }), refreshToken, conta: this.publicConta(conta) };
   }
 }

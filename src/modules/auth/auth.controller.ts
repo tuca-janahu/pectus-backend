@@ -19,8 +19,8 @@ export class AuthController {
     try {
       const { token, password } = req.body ?? {};
       if (!token || !password) return res.status(400).json({ error: "Token ou senha ausentes" });
-      await this.authService.activate(token, password);
-      res.status(204).end();
+      const tokens = await this.authService.activate(token, password);
+      return res.status(201).json(tokens);
     } catch (error) {
       res.status(400).json({ error: errorMessage(error) });
     }
