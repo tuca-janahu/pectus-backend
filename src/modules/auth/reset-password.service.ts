@@ -9,7 +9,7 @@ export class ResetPasswordService {
   async execute(token: string, password: string): Promise<void> {
     const registro = await this.repository.buscarTokenValidoPorHash(hashToken(token));
     if (!registro || registro.usadoEm || registro.expiraEm <= new Date() || registro.contaInativa) {
-      throw new Error("Token de redefinição invalido ou expirado");
+      throw new Error("Token de redefinição inválido ou expirado");
     }
     const senhaHash = await bcrypt.hash(password, 12);
     await this.repository.redefinirSenha({ tokenId: registro.id, contaId: registro.contaId, senhaHash });
