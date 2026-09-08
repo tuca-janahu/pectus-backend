@@ -3,9 +3,9 @@ import { authService } from "../modules/auth/auth.service";
 
 export async function authenticate(req: Request, res: Response, next: NextFunction) {
   const authorization = req.headers.authorization;
-  if (!authorization?.startsWith("Bearer ")) return res.status(401).json({ error: "Token nao fornecido" });
+  if (!authorization?.startsWith("Bearer ")) return res.status(401).json({ error: "Token não fornecido" });
   const user = await authService.authenticate(authorization.slice(7));
-  if (!user) return res.status(401).json({ error: "Token invalido" });
+  if (!user) return res.status(401).json({ error: "Token inválido" });
   res.locals.user = user;
   next();
 }

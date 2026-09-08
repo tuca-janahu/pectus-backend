@@ -22,7 +22,7 @@ export class RegisterService {
     await this.mailer
       .sendActivationEmail({ to: conta.email, nome: conta.nome, activationLink, expiresAt: expiraEm })
       .catch((error) => {
-        console.error("Falha ao enviar e-mail de ativacao de conta", error);
+        console.error("Falha ao enviar e-mail de ativação de conta", error);
       });
 
     return { conta, activationToken, activationExpiresAt: expiraEm };

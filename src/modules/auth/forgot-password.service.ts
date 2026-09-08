@@ -28,7 +28,7 @@ export class ForgotPasswordService {
     await this.mailer
       .sendPasswordResetEmail({ to: conta.email, nome: conta.nome, resetLink, expiresAt: expiraEm })
       .catch((error) => {
-        console.error("Falha ao enviar e-mail de redefinicao de senha", error);
+        console.error("Falha ao enviar e-mail de redefinição de senha", error);
       });
   }
 }

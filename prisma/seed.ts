@@ -16,7 +16,7 @@ async function main() {
   if (!existing) {
     const service = new RegisterService(new PrismaContaRepository(prisma), mailer);
     const { activationToken } = await service.execute({ nome: name, email, roles: ["ADMIN"] });
-    console.log(`ADMIN inicial criado. Token de ativacao: ${activationToken}`);
+    console.log(`ADMIN inicial criado. Token de ativação: ${activationToken}`);
   } else {
     console.log("ADMIN inicial ja existe.");
   }

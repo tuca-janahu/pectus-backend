@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
-// `prisma generate` nao abre conexao, mas a CLI precisa de uma URL sintaticamente
+// `prisma generate` não abre conexao, mas a CLI precisa de uma URL sintaticamente
 // valida. Migrations e a aplicacao devem sempre receber DATABASE_URL real.
 const databaseUrl =
   process.env.DATABASE_URL ??

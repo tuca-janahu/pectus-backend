@@ -26,11 +26,11 @@ class PasswordResetRepositoryFalso implements PasswordResetRepository {
   }
 
   async buscarTokenValidoPorHash(_tokenHash: string): Promise<TokenResetSenhaValido | null> {
-    throw new Error("nao usado neste teste");
+    throw new Error("não usado neste teste");
   }
 
   async redefinirSenha(): Promise<void> {
-    throw new Error("nao usado neste teste");
+    throw new Error("não usado neste teste");
   }
 }
 
@@ -70,7 +70,7 @@ describe("ForgotPasswordService", () => {
     expect(tokenHash).toBe(repository.tokensCriados[0].tokenHash);
   });
 
-  it("nao cria token nem envia e-mail quando a conta nao existe, e nao lanca erro", async () => {
+  it("não cria token nem envia e-mail quando a conta não existe, e não lanca erro", async () => {
     const repository = new PasswordResetRepositoryFalso();
     repository.contaExistente = null;
     const mailer = new MailerFalso();
@@ -82,7 +82,7 @@ describe("ForgotPasswordService", () => {
     expect(mailer.passwordResetEmailsSent).toHaveLength(0);
   });
 
-  it("nao lanca erro quando o mailer falha (best-effort)", async () => {
+  it("não lanca erro quando o mailer falha (best-effort)", async () => {
     const repository = new PasswordResetRepositoryFalso();
     repository.contaExistente = { id: 1, nome: "Ana", email: "ana@example.com" };
     const service = new ForgotPasswordService(repository, new MailerQueFalha());

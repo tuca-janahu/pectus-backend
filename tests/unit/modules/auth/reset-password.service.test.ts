@@ -12,11 +12,11 @@ class PasswordResetRepositoryFalso implements PasswordResetRepository {
   redefinicoes: { tokenId: number; contaId: number; senhaHash: string }[] = [];
 
   async buscarContaAtivaPorEmail(_email: string): Promise<ContaParaResetSenha | null> {
-    throw new Error("nao usado neste teste");
+    throw new Error("não usado neste teste");
   }
 
   async criarToken(): Promise<void> {
-    throw new Error("nao usado neste teste");
+    throw new Error("não usado neste teste");
   }
 
   async buscarTokenValidoPorHash(_tokenHash: string) {
@@ -52,7 +52,7 @@ describe("ResetPasswordService", () => {
     const service = new ResetPasswordService(repository);
 
     await expect(service.execute(TOKEN, "nova-senha-123")).rejects.toThrow(
-      "Token de redefinicao invalido ou expirado",
+      "Token de redefinição inválido ou expirado",
     );
   });
 
@@ -62,7 +62,7 @@ describe("ResetPasswordService", () => {
     const service = new ResetPasswordService(repository);
 
     await expect(service.execute(TOKEN, "nova-senha-123")).rejects.toThrow(
-      "Token de redefinicao invalido ou expirado",
+      "Token de redefinição inválido ou expirado",
     );
   });
 
@@ -72,7 +72,7 @@ describe("ResetPasswordService", () => {
     const service = new ResetPasswordService(repository);
 
     await expect(service.execute(TOKEN, "nova-senha-123")).rejects.toThrow(
-      "Token de redefinicao invalido ou expirado",
+      "Token de redefinição inválido ou expirado",
     );
   });
 
@@ -82,7 +82,7 @@ describe("ResetPasswordService", () => {
     const service = new ResetPasswordService(repository);
 
     await expect(service.execute(TOKEN, "nova-senha-123")).rejects.toThrow(
-      "Token de redefinicao invalido ou expirado",
+      "Token de redefinição inválido ou expirado",
     );
   });
 });

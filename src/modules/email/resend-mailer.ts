@@ -22,11 +22,11 @@ export class ResendMailer implements Mailer {
       to,
       subject: "Ative sua conta Pectus",
       html: `
-        <p>Ola, ${nome},</p>
+        <p>Olá, ${nome},</p>
         <p>Sua conta na Pectus foi criada. Clique no link abaixo para definir sua senha e ativar o acesso:</p>
         <p><a href="${activationLink}">${activationLink}</a></p>
         <p>Este link expira em ${formatExpiry(expiresAt)}.</p>
-        <p>Se voce nao esperava este e-mail, ignore-o.</p>
+        <p>Se você não esperava este e-mail, ignore-o.</p>
       `,
     });
     if (error) throw new Error(error.message);
@@ -36,13 +36,13 @@ export class ResendMailer implements Mailer {
     const { error } = await this.client.emails.send({
       from: this.from,
       to,
-      subject: "Redefinicao de senha - Pectus",
+      subject: "Redefinição de senha - Pectus",
       html: `
-        <p>Ola, ${nome},</p>
-        <p>Recebemos uma solicitacao para redefinir sua senha na Pectus. Clique no link abaixo para criar uma nova senha:</p>
+        <p>Olá, ${nome},</p>
+        <p>Recebemos uma solicitação para redefinir sua senha na Pectus. Clique no link abaixo para criar uma nova senha:</p>
         <p><a href="${resetLink}">${resetLink}</a></p>
         <p>Este link expira em ${formatExpiry(expiresAt)}.</p>
-        <p>Se voce nao solicitou esta alteracao, ignore este e-mail - sua senha atual continua valida.</p>
+        <p><strong>Se você não solicitou esta alteração, ignore este e-mail - sua senha atual continua válida.</strong></p>
       `,
     });
     if (error) throw new Error(error.message);

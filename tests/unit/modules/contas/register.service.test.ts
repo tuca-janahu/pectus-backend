@@ -55,7 +55,7 @@ class MailerQueFalha implements Mailer {
 }
 
 describe("RegisterService", () => {
-  it("registra conta ADMIN, normaliza o email e envia e-mail de ativacao", async () => {
+  it("registra conta ADMIN, normaliza o email e envia e-mail de ativação", async () => {
     const repository = new ContaRepositoryFalso();
     const mailer = new MailerFalso();
     const service = new RegisterService(repository, mailer);
@@ -108,7 +108,7 @@ describe("RegisterService", () => {
     ).rejects.toThrow("O perfil medico e obrigatorio para contas com o papel MEDICO.");
   });
 
-  it("nao lanca erro quando o envio de e-mail de ativacao falha", async () => {
+  it("não lanca erro quando o envio de e-mail de ativação falha", async () => {
     const repository = new ContaRepositoryFalso();
     const service = new RegisterService(repository, new MailerQueFalha());
 

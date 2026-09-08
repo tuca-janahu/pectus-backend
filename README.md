@@ -45,7 +45,7 @@ Durante o desenvolvimento, novas migrations devem ser criadas com:
 npm run prisma:migrate -- --name descricao_da_mudanca
 ```
 
-Nunca use `prisma db push` como fluxo normal e nao execute migrations contra
+Nunca use `prisma db push` como fluxo normal e não execute migrations contra
 producao sem a `DATABASE_URL` de producao explicitamente configurada.
 
 ## Endpoint inicial

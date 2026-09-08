@@ -74,10 +74,10 @@ export class AuthController {
     try {
       await this.forgotPasswordService.execute(email);
     } catch (error) {
-      console.error("Falha ao processar solicitacao de redefinicao de senha", error);
+      console.error("Falha ao processar solicitacao de redefinição de senha", error);
     }
     return res.status(200).json({
-      message: "Se este e-mail estiver cadastrado, enviaremos um link de redefinicao de senha.",
+      message: "Se este e-mail estiver cadastrado, enviaremos um link de redefinição de senha.",
     });
   };
 

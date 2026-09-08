@@ -40,7 +40,7 @@ describe("Ativacao de conta", () => {
         papeis: { create: [{ papel: "MEDICO" }] },
         tokensAtivacao: {
           create: {
-            tokenHash: hashToken("token-de-ativacao"),
+            tokenHash: hashToken("token-de-ativação"),
             expiraEm: new Date(Date.now() + 60_000),
           },
         },
@@ -54,7 +54,7 @@ describe("Ativacao de conta", () => {
       },
     });
 
-    const resultado = await authService.activate("token-de-ativacao", "senha-segura-123");
+    const resultado = await authService.activate("token-de-ativação", "senha-segura-123");
 
     expect(resultado.conta).toMatchObject({ id: novaConta.id, email: "nova@example.com", roles: ["MEDICO"] });
     expect(resultado.accessToken).toBeTruthy();
@@ -65,7 +65,7 @@ describe("Ativacao de conta", () => {
     expect(sessoes.map(({ contaId }) => contaId)).toEqual([seed.id, novaConta.id]);
   });
 
-  it("nao permite reutilizar o token de ativacao", async () => {
+  it("não permite reutilizar o token de ativação", async () => {
     await testPrisma.conta.create({
       data: {
         nome: "Nova conta",
@@ -83,7 +83,7 @@ describe("Ativacao de conta", () => {
     await authService.activate("token-de-uso-unico", "senha-segura-123");
 
     await expect(authService.activate("token-de-uso-unico", "outra-senha-123")).rejects.toThrow(
-      "Token de ativacao invalido ou expirado",
+      "Token de ativação inválido ou expirado",
     );
   });
 });

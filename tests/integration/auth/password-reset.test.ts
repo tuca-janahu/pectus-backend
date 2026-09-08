@@ -48,7 +48,7 @@ function extrairToken(resetLink: string) {
   return new URL(resetLink).searchParams.get("token") ?? "";
 }
 
-describe("Fluxo de redefinicao de senha", () => {
+describe("Fluxo de redefinição de senha", () => {
   beforeAll(async () => {
     await testPrisma.$connect();
   });
@@ -91,14 +91,14 @@ describe("Fluxo de redefinicao de senha", () => {
 
     await expect(authService.login("ana@example.com", "senha-nova-123")).resolves.toBeDefined();
     await expect(authService.login("ana@example.com", "senha-antiga-123")).rejects.toThrow(
-      "Credenciais invalidas",
+      "Credenciais inválidas",
     );
 
     const sessaoAtualizada = await testPrisma.sessao.findUniqueOrThrow({ where: { id: sessao.id } });
     expect(sessaoAtualizada.revogadoEm).not.toBeNull();
   });
 
-  it("rejeita reutilizar o mesmo token de redefinicao", async () => {
+  it("rejeita reutilizar o mesmo token de redefinição", async () => {
     await criarContaComSenha("ana@example.com", "senha-antiga-123");
 
     const mailer = new MailerFalso();
@@ -110,11 +110,11 @@ describe("Fluxo de redefinicao de senha", () => {
     await resetPasswordService.execute(token, "senha-nova-123");
 
     await expect(resetPasswordService.execute(token, "outra-senha-456")).rejects.toThrow(
-      "Token de redefinicao invalido ou expirado",
+      "Token de redefinição inválido ou expirado",
     );
   });
 
-  it("rejeita um token de redefinicao expirado", async () => {
+  it("rejeita um token de redefinição expirado", async () => {
     const conta = await criarContaComSenha("ana@example.com", "senha-antiga-123");
     const tokenBruto = "token-de-teste-expirado";
     await testPrisma.tokenRedefinicaoSenha.create({
@@ -127,15 +127,15 @@ describe("Fluxo de redefinicao de senha", () => {
 
     const resetPasswordService = new ResetPasswordService(passwordResetRepository);
     await expect(resetPasswordService.execute(tokenBruto, "senha-nova-123")).rejects.toThrow(
-      "Token de redefinicao invalido ou expirado",
+      "Token de redefinição inválido ou expirado",
     );
   });
 
-  it("nao cria token nem envia e-mail para um endereco nao cadastrado", async () => {
+  it("não cria token nem envia e-mail para um endereco não cadastrado", async () => {
     const mailer = new MailerFalso();
     const forgotPasswordService = new ForgotPasswordService(passwordResetRepository, mailer);
 
-    await expect(forgotPasswordService.execute("nao-existe@example.com")).resolves.toBeUndefined();
+    await expect(forgotPasswordService.execute("não-existe@example.com")).resolves.toBeUndefined();
 
     expect(mailer.passwordResetEmailsSent).toHaveLength(0);
     expect(await testPrisma.tokenRedefinicaoSenha.count()).toBe(0);

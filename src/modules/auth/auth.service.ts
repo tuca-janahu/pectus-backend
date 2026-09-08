@@ -13,18 +13,18 @@ export class AuthService {
       include: { conta: { include: { papeis: true, medico: true } } },
     });
     if (!activation || activation.usadoEm || activation.expiraEm <= new Date() || activation.conta.inativadoEm) {
-      throw new Error("Token de ativacao invalido ou expirado");
+      throw new Error("Token de ativação inválido ou expirado");
     }
 
     const senhaHash = await bcrypt.hash(password, 12);
     return prisma.$transaction(async (tx) => {
       // Consome o token condicionalmente para impedir que duas requisicoes
-      // concorrentes criem sessoes para a mesma ativacao.
+      // concorrentes criem sessoes para a mesma ativação.
       const tokenConsumido = await tx.tokenAtivacao.updateMany({
         where: { id: activation.id, usadoEm: null, expiraEm: { gt: new Date() } },
         data: { usadoEm: new Date() },
       });
-      if (tokenConsumido.count !== 1) throw new Error("Token de ativacao invalido ou expirado");
+      if (tokenConsumido.count !== 1) throw new Error("Token de ativação inválido ou expirado");
 
       await tx.identidadeAuth.upsert({
         where: { contaId_provedor: { contaId: activation.contaId, provedor: "LOCAL" } },
@@ -39,13 +39,13 @@ export class AuthService {
   async login(email: string, password: string) {
     const conta = await prisma.conta.findUnique({ where: { email: email.toLowerCase() }, include: { papeis: true, medico: true, identidades: { where: { provedor: "LOCAL" } } } });
     const identity = conta?.identidades[0];
-    if (!conta || conta.inativadoEm || !identity?.senhaHash || !(await bcrypt.compare(password, identity.senhaHash))) throw new Error("Credenciais invalidas");
+    if (!conta || conta.inativadoEm || !identity?.senhaHash || !(await bcrypt.compare(password, identity.senhaHash))) throw new Error("Credenciais inválidas");
     return this.createSession(conta);
   }
 
   async refresh(refreshToken: string) {
     const session = await prisma.sessao.findFirst({ where: { refreshTokenHash: hash(refreshToken), revogadoEm: null, expiraEm: { gt: new Date() } }, include: { conta: { include: { papeis: true, medico: true } } } });
-    if (!session || session.conta.inativadoEm) throw new Error("Refresh token invalido");
+    if (!session || session.conta.inativadoEm) throw new Error("Refresh token inválido");
     await prisma.sessao.update({ where: { id: session.id }, data: { revogadoEm: new Date() } });
     return this.createSession(session.conta);
   }

@@ -8,7 +8,7 @@ export { NoopMailer } from "./noop-mailer";
 export { ResendMailer } from "./resend-mailer";
 
 if (!emailConfig.resendApiKey) {
-  console.warn("RESEND_API_KEY nao definida - e-mails serao apenas logados no console (NoopMailer).");
+  console.warn("RESEND_API_KEY não definida - e-mails serao apenas logados no console (NoopMailer).");
 }
 
 export const mailer: Mailer = emailConfig.resendApiKey ? new ResendMailer() : new NoopMailer();
