@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { RegisterService } from "../../../../src/modules/contas/register.service";
 import type {
+  AtualizarContaInput,
   ContaCriada,
   ContaRepository,
+  ContaResumo,
 } from "../../../../src/modules/contas/conta.repository";
 import type { RegisterData } from "../../../../src/modules/contas/register.schema";
 import type {
@@ -31,6 +33,18 @@ class ContaRepositoryFalso implements ContaRepository {
           }
         : null,
     };
+  }
+
+  async listar(): Promise<ContaResumo[]> {
+    throw new Error("nao usado neste teste");
+  }
+
+  async buscarPorId(_id: number): Promise<ContaResumo | null> {
+    throw new Error("nao usado neste teste");
+  }
+
+  async atualizar(_id: number, _input: AtualizarContaInput): Promise<ContaResumo> {
+    throw new Error("nao usado neste teste");
   }
 }
 

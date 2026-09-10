@@ -59,7 +59,7 @@ describe("Ativacao de conta", () => {
     expect(resultado.conta).toMatchObject({ id: novaConta.id, email: "nova@example.com", roles: ["MEDICO"] });
     expect(resultado.accessToken).toBeTruthy();
     expect(resultado.refreshToken).toBeTruthy();
-    expect(await authService.authenticate(resultado.accessToken)).resolves.toMatchObject({ id: novaConta.id });
+    expect(await authService.authenticate(resultado.accessToken)).toMatchObject({ id: novaConta.id });
 
     const sessoes = await testPrisma.sessao.findMany({ orderBy: { contaId: "asc" } });
     expect(sessoes.map(({ contaId }) => contaId)).toEqual([seed.id, novaConta.id]);
