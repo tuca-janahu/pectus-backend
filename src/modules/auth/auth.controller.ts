@@ -40,6 +40,20 @@ export class AuthController {
     }
   };
 
+  loginWithGoogle = async (req: Request, res: Response) => {
+    const { code } = req.body ?? {};
+    if (!code) {
+      return res.status(400).json({ error: "Código de autorização ausente" });
+    }
+
+    try {
+      const tokens = await this.authService.loginWithGoogle(code);
+      return res.json(tokens);
+    } catch (error) {
+      return res.status(401).json({ error: errorMessage(error) });
+    }
+  };
+
   refresh = async (req: Request, res: Response) => {
     const { refreshToken } = req.body ?? {};
     if (!refreshToken) {

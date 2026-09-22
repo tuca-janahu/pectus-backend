@@ -11,6 +11,7 @@ const authController = new AuthController(authService, forgotPasswordService, re
 
 router.post("/activate", authController.activate);
 router.post("/login", authController.login);
+router.post("/google", authController.loginWithGoogle);
 router.post("/refresh", authController.refresh);
 router.post("/logout", authController.logout);
 router.post("/forgot-password", authController.forgotPassword);
