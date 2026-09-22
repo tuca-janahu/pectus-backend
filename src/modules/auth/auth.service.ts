@@ -5,6 +5,13 @@ import { authConfig } from "../../config/auth";
 import { prisma } from "../../db/prisma";
 import type { Prisma } from "../../generated/prisma/client";
 import { hashToken as hash } from "./token-hash";
+import { OAuth2Client } from "google-auth-library";
+
+const googleClient = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  "postmessage" 
+);
 
 export class AuthService {
   async activate(token: string, password: string) {
@@ -40,6 +47,30 @@ export class AuthService {
     const conta = await prisma.conta.findUnique({ where: { email: email.toLowerCase() }, include: { papeis: true, medico: true, identidades: { where: { provedor: "LOCAL" } } } });
     const identity = conta?.identidades[0];
     if (!conta || conta.inativadoEm || !identity?.senhaHash || !(await bcrypt.compare(password, identity.senhaHash))) throw new Error("Credenciais inválidas");
+    return this.createSession(conta);
+  }
+
+  async loginWithGoogle(code: string) {
+    const { tokens } = await googleClient.getToken(code);
+    const ticket = await googleClient.verifyIdToken({
+      idToken: tokens.id_token!,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) throw new Error("Falha ao obter dados do Google");
+
+    const email = payload.email.toLowerCase();
+
+    const conta = await prisma.conta.findUnique({
+      where: { email },
+      include: { papeis: true, medico: true }
+    });
+
+    if (!conta || conta.inativadoEm) {
+      throw new Error("Conta não encontrada ou inativa. Fale com a administração.");
+    }
+
     return this.createSession(conta);
   }
 
