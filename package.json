@@ -14,6 +14,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:validate": "prisma validate",
     "seed": "tsx prisma/seed.ts",
+    "seed:localidades": "tsx prisma/seed-localidades.ts",
     "test": "npm run test:unit",
     "test:watch": "vitest --config vitest.unit.config.mts",
     "test:unit": "vitest run --config vitest.unit.config.mts",

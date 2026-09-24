@@ -110,42 +110,42 @@ model Medico {
   @@map("medicos")
 }
 
-model Pais {
-  id      Int      @id @default(autoincrement())
-  nome    String   @unique @db.VarChar(100)
-  estados Estado[]
+model Estado {
+  codigo     Int         @id
+  sigla      String      @unique @db.VarChar(2)
+  nome       String      @db.VarChar(100)
+  municipios Municipio[]
 
-  @@map("paises")
+  @@map("estados")
 }
 
-model Estado {
-  id        Int        @id @default(autoincrement())
-  paisId    Int        @map("pais_id")
-  nome      String     @db.VarChar(100)
-  sigla     String     @db.VarChar(10)
-  pais      Pais       @relation(fields: [paisId], references: [id])
-  pacientes Paciente[]
+model Municipio {
+  codigo          Int        @id
+  nome            String     @db.VarChar(120)
+  estadoCodigo    Int        @map("estado_codigo")
+  pertenceRmBelem Boolean    @default(false) @map("pertence_rm_belem")
+  estado          Estado     @relation(fields: [estadoCodigo], references: [codigo])
+  pacientes       Paciente[]
 
-  @@unique([paisId, sigla])
-  @@map("estados")
+  @@index([estadoCodigo])
+  @@map("municipios")
 }
 
 model Paciente {
   id             Int               @id @default(autoincrement())
-  estadoId       Int?              @map("estado_id")
+  municipioId    Int?              @map("municipio_id")
   cpf            String?           @unique @db.VarChar(11)
   nome           String            @db.VarChar(255)
-  municipio      String            @db.VarChar(120)
   dataNascimento DateTime          @map("data_nascimento") @db.Date
   genero         String            @db.VarChar(50)
   criadoEm       DateTime          @default(now()) @map("criado_em") @db.Timestamptz(6)
   atualizadoEm   DateTime          @updatedAt @map("atualizado_em") @db.Timestamptz(6)
   inativadoEm    DateTime?         @map("inativado_em") @db.Timestamptz(6)
   fichas         FichaEpicritica[]
-  estado         Estado?           @relation(fields: [estadoId], references: [id], onDelete: Restrict)
+  municipio      Municipio?        @relation(fields: [municipioId], references: [codigo], onDelete: Restrict)
   telefones      Telefone[]
 
-  @@index([estadoId])
+  @@index([municipioId])
   @@index([nome])
   @@map("pacientes")
 }
