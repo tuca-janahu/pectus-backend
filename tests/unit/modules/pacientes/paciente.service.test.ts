@@ -14,6 +14,11 @@ import type {
   LocalidadeRepository,
   MunicipioResumo,
 } from "../../../../src/modules/localidades/localidade.repository";
+import type {
+  ListarLogsFiltro,
+  LogRepository,
+  RegistrarLogInput,
+} from "../../../../src/modules/logs/log.repository";
 
 class PacienteRepositoryFalso implements PacienteRepository {
   criados: CriarPacienteData[] = [];
@@ -78,11 +83,24 @@ class LocalidadeRepositoryFalsa implements LocalidadeRepository {
   }
 }
 
+class LogRepositoryFalso implements LogRepository {
+  registrados: RegistrarLogInput[] = [];
+
+  async criar(input: RegistrarLogInput) {
+    this.registrados.push(input);
+  }
+
+  async listar(_filtro: ListarLogsFiltro) {
+    throw new Error("não usado neste teste");
+  }
+}
+
 describe("CriarPacienteService", () => {
-  it("cria um paciente sem município informado", async () => {
+  it("cria um paciente sem município informado e registra o log correspondente", async () => {
     const pacienteRepository = new PacienteRepositoryFalso();
     const localidadeRepository = new LocalidadeRepositoryFalsa();
-    const service = new CriarPacienteService(pacienteRepository, localidadeRepository);
+    const logRepository = new LogRepositoryFalso();
+    const service = new CriarPacienteService(pacienteRepository, localidadeRepository, logRepository);
 
     const paciente = await service.execute({
       nome: "Ana",
@@ -92,13 +110,15 @@ describe("CriarPacienteService", () => {
 
     expect(paciente.nome).toBe("Ana");
     expect(pacienteRepository.criados).toHaveLength(1);
+    expect(logRepository.registrados).toHaveLength(1);
+    expect(logRepository.registrados[0]).toMatchObject({ modulo: "PACIENTES", tipo: "PACIENTE_CRIADO" });
   });
 
   it("cria um paciente com município válido", async () => {
     const pacienteRepository = new PacienteRepositoryFalso();
     const localidadeRepository = new LocalidadeRepositoryFalsa();
     localidadeRepository.municipioValido = { codigo: 1501402, nome: "Belém", estadoCodigo: 15, pertenceRmBelem: true };
-    const service = new CriarPacienteService(pacienteRepository, localidadeRepository);
+    const service = new CriarPacienteService(pacienteRepository, localidadeRepository, new LogRepositoryFalso());
 
     await service.execute({
       nome: "Ana",
@@ -113,7 +133,8 @@ describe("CriarPacienteService", () => {
   it("rejeita municipioId inválido sem chamar o repositório de pacientes", async () => {
     const pacienteRepository = new PacienteRepositoryFalso();
     const localidadeRepository = new LocalidadeRepositoryFalsa();
-    const service = new CriarPacienteService(pacienteRepository, localidadeRepository);
+    const logRepository = new LogRepositoryFalso();
+    const service = new CriarPacienteService(pacienteRepository, localidadeRepository, logRepository);
 
     await expect(
       service.execute({
@@ -125,6 +146,7 @@ describe("CriarPacienteService", () => {
     ).rejects.toThrow("Município inválido");
 
     expect(pacienteRepository.criados).toHaveLength(0);
+    expect(logRepository.registrados).toHaveLength(0);
   });
 });
 

@@ -4,6 +4,7 @@ import { createPrismaClient } from "../../../src/db/prisma";
 import { RegisterService } from "../../../src/modules/contas/register.service";
 import { PrismaContaRepository } from "../../../src/modules/contas/conta.repository";
 import { NoopMailer } from "../../../src/modules/email/noop-mailer";
+import { PrismaLogRepository } from "../../../src/modules/logs/log.repository";
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -12,7 +13,11 @@ if (!databaseUrl) {
 }
 
 const testPrisma = createPrismaClient(databaseUrl);
-const service = new RegisterService(new PrismaContaRepository(testPrisma), new NoopMailer());
+const service = new RegisterService(
+  new PrismaContaRepository(testPrisma),
+  new NoopMailer(),
+  new PrismaLogRepository(testPrisma),
+);
 
 describe("RegisterService", () => {
   beforeAll(async () => {
@@ -20,6 +25,7 @@ describe("RegisterService", () => {
   });
 
   afterEach(async () => {
+    await testPrisma.logAuditoria.deleteMany();
     await testPrisma.tokenAtivacao.deleteMany();
     await testPrisma.telefone.deleteMany();
     await testPrisma.fichaEpicritica.deleteMany();

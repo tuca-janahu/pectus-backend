@@ -8,6 +8,7 @@ import {
   CriarPacienteService,
 } from "../../../src/modules/pacientes/paciente.service";
 import { ensureLocalidadesFixture, FIXTURE_MUNICIPIO_BELEM } from "../../setup/localidades-fixture";
+import { PrismaLogRepository } from "../../../src/modules/logs/log.repository";
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -18,7 +19,8 @@ if (!databaseUrl) {
 const testPrisma = createPrismaClient(databaseUrl);
 const localidadeRepository = new PrismaLocalidadeRepository(testPrisma);
 const pacienteRepository = new PrismaPacienteRepository(testPrisma);
-const criarPacienteService = new CriarPacienteService(pacienteRepository, localidadeRepository);
+const logRepository = new PrismaLogRepository(testPrisma);
+const criarPacienteService = new CriarPacienteService(pacienteRepository, localidadeRepository, logRepository);
 const atualizarPacienteService = new AtualizarPacienteService(pacienteRepository, localidadeRepository);
 
 describe("Pacientes", () => {
@@ -28,6 +30,7 @@ describe("Pacientes", () => {
   });
 
   afterEach(async () => {
+    await testPrisma.logAuditoria.deleteMany();
     await testPrisma.telefone.deleteMany({ where: { pacienteId: { not: null } } });
     await testPrisma.paciente.deleteMany();
   });

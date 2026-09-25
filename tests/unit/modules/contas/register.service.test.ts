@@ -13,6 +13,11 @@ import type {
   Mailer,
   PasswordResetEmailInput,
 } from "../../../../src/modules/email/mailer";
+import type {
+  ListarLogsFiltro,
+  LogRepository,
+  RegistrarLogInput,
+} from "../../../../src/modules/logs/log.repository";
 
 class ContaRepositoryFalso implements ContaRepository {
   receivedData?: RegisterData;
@@ -68,11 +73,24 @@ class MailerQueFalha implements Mailer {
   }
 }
 
+class LogRepositoryFalso implements LogRepository {
+  registrados: RegistrarLogInput[] = [];
+
+  async criar(input: RegistrarLogInput) {
+    this.registrados.push(input);
+  }
+
+  async listar(_filtro: ListarLogsFiltro) {
+    throw new Error("não usado neste teste");
+  }
+}
+
 describe("RegisterService", () => {
   it("registra conta ADMIN, normaliza o email e envia e-mail de ativação", async () => {
     const repository = new ContaRepositoryFalso();
     const mailer = new MailerFalso();
-    const service = new RegisterService(repository, mailer);
+    const logRepository = new LogRepositoryFalso();
+    const service = new RegisterService(repository, mailer, logRepository);
 
     const conta = await service.execute({
       nome: "Administradora",
@@ -86,11 +104,13 @@ describe("RegisterService", () => {
     expect(repository.receivedData?.email).toBe("admin@example.com");
     expect(mailer.activationEmailsSent).toHaveLength(1);
     expect(mailer.activationEmailsSent[0].to).toBe("admin@example.com");
+    expect(logRepository.registrados).toHaveLength(1);
+    expect(logRepository.registrados[0]).toMatchObject({ modulo: "USUARIOS", tipo: "USUARIO_CRIADO" });
   });
 
   it("registra conta MEDICO com perfil profissional e telefones", async () => {
     const repository = new ContaRepositoryFalso();
-    const service = new RegisterService(repository, new MailerFalso());
+    const service = new RegisterService(repository, new MailerFalso(), new LogRepositoryFalso());
 
     const conta = await service.execute({
       nome: "Dra. Ana",
@@ -111,7 +131,7 @@ describe("RegisterService", () => {
   });
 
   it("rejeita MEDICO sem perfil profissional", async () => {
-    const service = new RegisterService(new ContaRepositoryFalso(), new MailerFalso());
+    const service = new RegisterService(new ContaRepositoryFalso(), new MailerFalso(), new LogRepositoryFalso());
 
     await expect(
       service.execute({
@@ -124,7 +144,7 @@ describe("RegisterService", () => {
 
   it("não lanca erro quando o envio de e-mail de ativação falha", async () => {
     const repository = new ContaRepositoryFalso();
-    const service = new RegisterService(repository, new MailerQueFalha());
+    const service = new RegisterService(repository, new MailerQueFalha(), new LogRepositoryFalso());
 
     const conta = await service.execute({
       nome: "Administradora",

@@ -5,6 +5,7 @@ import { PrismaContaRepository } from "../../../src/modules/contas/conta.reposit
 import { RegisterService } from "../../../src/modules/contas/register.service";
 import { UpdateContaService } from "../../../src/modules/contas/update-conta.service";
 import { NoopMailer } from "../../../src/modules/email/noop-mailer";
+import { PrismaLogRepository } from "../../../src/modules/logs/log.repository";
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -14,8 +15,9 @@ if (!databaseUrl) {
 
 const testPrisma = createPrismaClient(databaseUrl);
 const contaRepository = new PrismaContaRepository(testPrisma);
-const registerService = new RegisterService(contaRepository, new NoopMailer());
-const updateContaService = new UpdateContaService(contaRepository);
+const logRepository = new PrismaLogRepository(testPrisma);
+const registerService = new RegisterService(contaRepository, new NoopMailer(), logRepository);
+const updateContaService = new UpdateContaService(contaRepository, logRepository);
 
 describe("Listagem e atualizacao de contas", () => {
   beforeAll(async () => {
@@ -23,6 +25,7 @@ describe("Listagem e atualizacao de contas", () => {
   });
 
   afterEach(async () => {
+    await testPrisma.logAuditoria.deleteMany();
     await testPrisma.tokenAtivacao.deleteMany();
     await testPrisma.identidadeAuth.deleteMany();
     await testPrisma.telefone.deleteMany();

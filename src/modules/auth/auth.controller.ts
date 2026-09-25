@@ -8,6 +8,10 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Erro interno.";
 }
 
+function contextoDe(req: Request) {
+  return { ip: req.ip, userAgent: req.headers["user-agent"] };
+}
+
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
@@ -33,7 +37,7 @@ export class AuthController {
     }
 
     try {
-      const tokens = await this.authService.login(email, password);
+      const tokens = await this.authService.login(email, password, contextoDe(req));
       return res.json(tokens);
     } catch (error) {
       return res.status(401).json({ error: errorMessage(error) });
@@ -47,7 +51,7 @@ export class AuthController {
     }
 
     try {
-      const tokens = await this.authService.loginWithGoogle(code);
+      const tokens = await this.authService.loginWithGoogle(code, contextoDe(req));
       return res.json(tokens);
     } catch (error) {
       return res.status(401).json({ error: errorMessage(error) });

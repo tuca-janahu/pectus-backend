@@ -1,6 +1,7 @@
 import { atualizarPacienteSchema, criarPacienteSchema, type AtualizarPacienteInput, type CriarPacienteInput } from "./paciente.schema";
 import type { PacienteRepository } from "./paciente.repository";
 import type { LocalidadeRepository } from "../localidades/localidade.repository";
+import type { LogRepository } from "../logs/log.repository";
 
 async function validarMunicipio(localidadeRepository: LocalidadeRepository, municipioId: number | undefined) {
   if (municipioId === undefined) return;
@@ -12,12 +13,22 @@ export class CriarPacienteService {
   constructor(
     private readonly pacienteRepository: PacienteRepository,
     private readonly localidadeRepository: LocalidadeRepository,
+    private readonly logRepository: LogRepository,
   ) {}
 
-  async execute(input: CriarPacienteInput) {
+  async execute(input: CriarPacienteInput, atorId?: number) {
     const data = criarPacienteSchema.parse(input);
     await validarMunicipio(this.localidadeRepository, data.municipioId);
-    return this.pacienteRepository.create(data);
+    const paciente = await this.pacienteRepository.create(data);
+
+    await this.logRepository.criar({
+      modulo: "PACIENTES",
+      tipo: "PACIENTE_CRIADO",
+      descricao: `Paciente cadastrado: ${paciente.nome}.`,
+      atorId: atorId ?? null,
+    });
+
+    return paciente;
   }
 }
 

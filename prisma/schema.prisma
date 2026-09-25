@@ -22,6 +22,7 @@ model Conta {
   sessoes                Sessao[]
   tokensAtivacao         TokenAtivacao[]
   tokensRedefinicaoSenha TokenRedefinicaoSenha[]
+  logsAuditoria          LogAuditoria[]
 
   @@map("contas")
 }
@@ -197,6 +198,39 @@ model FichaEpicritica {
   @@index([status])
   @@index([dataHoraPrevista])
   @@map("fichas_epicriticas")
+}
+
+model LogAuditoria {
+  id        Int                 @id @default(autoincrement())
+  modulo    ModuloAuditoria
+  tipo      TipoEventoAuditoria
+  descricao String              @db.VarChar(500)
+  atorId    Int?                @map("ator_id")
+  ator      Conta?              @relation(fields: [atorId], references: [id], onDelete: SetNull)
+  metadata  Json?
+  criadoEm  DateTime            @default(now()) @map("criado_em") @db.Timestamptz(6)
+
+  @@index([modulo])
+  @@index([tipo])
+  @@index([criadoEm])
+  @@index([atorId])
+  @@map("logs_auditoria")
+}
+
+enum ModuloAuditoria {
+  AUTENTICACAO
+  USUARIOS
+  PACIENTES
+}
+
+enum TipoEventoAuditoria {
+  LOGIN_SUCESSO
+  LOGIN_FALHA
+  USUARIO_CRIADO
+  USUARIO_ATIVADO_ADMIN
+  USUARIO_DESATIVADO_ADMIN
+  USUARIO_ATIVADO_PROPRIO
+  PACIENTE_CRIADO
 }
 
 enum Papel {

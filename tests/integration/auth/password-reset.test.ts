@@ -54,6 +54,7 @@ describe("Fluxo de redefinição de senha", () => {
   });
 
   afterEach(async () => {
+    await testPrisma.logAuditoria.deleteMany();
     await testPrisma.sessao.deleteMany();
     await testPrisma.tokenRedefinicaoSenha.deleteMany();
     await testPrisma.tokenAtivacao.deleteMany();

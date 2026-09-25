@@ -4,14 +4,20 @@ import * as jwt from "jsonwebtoken";
 import { authConfig } from "../../config/auth";
 import { prisma } from "../../db/prisma";
 import type { Prisma } from "../../generated/prisma/client";
+import { logRepository } from "../logs/log.repository";
 import { hashToken as hash } from "./token-hash";
 import { OAuth2Client } from "google-auth-library";
 
 const googleClient = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
-  "postmessage" 
+  "postmessage"
 );
+
+export interface ContextoRequisicao {
+  ip?: string;
+  userAgent?: string;
+}
 
 export class AuthService {
   async activate(token: string, password: string) {
@@ -24,7 +30,7 @@ export class AuthService {
     }
 
     const senhaHash = await bcrypt.hash(password, 12);
-    return prisma.$transaction(async (tx) => {
+    const sessao = await prisma.$transaction(async (tx) => {
       // Consome o token condicionalmente para impedir que duas requisicoes
       // concorrentes criem sessoes para a mesma ativação.
       const tokenConsumido = await tx.tokenAtivacao.updateMany({
@@ -41,16 +47,55 @@ export class AuthService {
 
       return this.createSession(activation.conta, tx);
     });
+
+    await logRepository.criar({
+      modulo: "USUARIOS",
+      tipo: "USUARIO_ATIVADO_PROPRIO",
+      descricao: `Conta ativada pelo próprio usuário: ${activation.conta.nome} (${activation.conta.email}).`,
+      atorId: activation.contaId,
+    });
+
+    return sessao;
   }
 
-  async login(email: string, password: string) {
-    const conta = await prisma.conta.findUnique({ where: { email: email.toLowerCase() }, include: { papeis: true, medico: true, identidades: { where: { provedor: "LOCAL" } } } });
+  async login(email: string, password: string, contexto?: ContextoRequisicao) {
+    const emailNormalizado = email.toLowerCase();
+    const conta = await prisma.conta.findUnique({
+      where: { email: emailNormalizado },
+      include: { papeis: true, medico: true, identidades: { where: { provedor: "LOCAL" } } },
+    });
     const identity = conta?.identidades[0];
-    if (!conta || conta.inativadoEm || !identity?.senhaHash || !(await bcrypt.compare(password, identity.senhaHash))) throw new Error("Credenciais inválidas");
+    const senhaValida = identity?.senhaHash ? await bcrypt.compare(password, identity.senhaHash) : false;
+
+    if (!conta || conta.inativadoEm || !identity?.senhaHash || !senhaValida) {
+      const motivo = !conta
+        ? "email_desconhecido"
+        : conta.inativadoEm
+          ? "conta_inativa"
+          : !identity?.senhaHash
+            ? "sem_senha_local"
+            : "senha_incorreta";
+      await logRepository.criar({
+        modulo: "AUTENTICACAO",
+        tipo: "LOGIN_FALHA",
+        descricao: `Tentativa de login malsucedida para ${emailNormalizado} (${motivo}).`,
+        atorId: conta?.id ?? null,
+        metadata: { email: emailNormalizado, motivo, ...contexto },
+      });
+      throw new Error("Credenciais inválidas");
+    }
+
+    await logRepository.criar({
+      modulo: "AUTENTICACAO",
+      tipo: "LOGIN_SUCESSO",
+      descricao: `Login realizado com sucesso: ${conta.nome} (${conta.email}).`,
+      atorId: conta.id,
+      metadata: { ...contexto },
+    });
     return this.createSession(conta);
   }
 
-  async loginWithGoogle(code: string) {
+  async loginWithGoogle(code: string, contexto?: ContextoRequisicao) {
     const { tokens } = await googleClient.getToken(code);
     const ticket = await googleClient.verifyIdToken({
       idToken: tokens.id_token!,
@@ -68,8 +113,24 @@ export class AuthService {
     });
 
     if (!conta || conta.inativadoEm) {
+      const motivo = !conta ? "conta_nao_encontrada" : "conta_inativa";
+      await logRepository.criar({
+        modulo: "AUTENTICACAO",
+        tipo: "LOGIN_FALHA",
+        descricao: `Tentativa de login via Google malsucedida para ${email} (${motivo}).`,
+        atorId: conta?.id ?? null,
+        metadata: { email, motivo, provedor: "GOOGLE", ...contexto },
+      });
       throw new Error("Conta não encontrada ou inativa. Fale com a administração.");
     }
+
+    await logRepository.criar({
+      modulo: "AUTENTICACAO",
+      tipo: "LOGIN_SUCESSO",
+      descricao: `Login via Google realizado com sucesso: ${conta.nome} (${conta.email}).`,
+      atorId: conta.id,
+      metadata: { provedor: "GOOGLE", ...contexto },
+    });
 
     return this.createSession(conta);
   }

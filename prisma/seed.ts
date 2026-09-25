@@ -3,6 +3,7 @@ import { prisma } from "../src/db/prisma";
 import { PrismaContaRepository } from "../src/modules/contas/conta.repository";
 import { RegisterService } from "../src/modules/contas/register.service";
 import { mailer } from "../src/modules/email";
+import { logRepository } from "../src/modules/logs/log.repository";
 
 async function main() {
   const name = process.env.INITIAL_ADMIN_NAME;
@@ -14,7 +15,7 @@ async function main() {
 
   const existing = await prisma.conta.findUnique({ where: { email } });
   if (!existing) {
-    const service = new RegisterService(new PrismaContaRepository(prisma), mailer);
+    const service = new RegisterService(new PrismaContaRepository(prisma), mailer, logRepository);
     const { activationToken } = await service.execute({ nome: name, email, roles: ["ADMIN"] });
     console.log(`ADMIN inicial criado. Token de ativação: ${activationToken}`);
   } else {

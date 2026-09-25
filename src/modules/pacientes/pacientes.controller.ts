@@ -1,13 +1,14 @@
 import type { Request, Response } from "express";
 import { prisma } from "../../db/prisma";
 import { PrismaLocalidadeRepository } from "../localidades/localidade.repository";
+import { logRepository } from "../logs/log.repository";
 import { PrismaPacienteRepository } from "./paciente.repository";
 import { AtualizarPacienteService, BuscarPacienteService, CriarPacienteService, ListarPacientesService } from "./paciente.service";
 
 const pacienteRepository = new PrismaPacienteRepository(prisma);
 const localidadeRepository = new PrismaLocalidadeRepository(prisma);
 
-const criarPacienteService = new CriarPacienteService(pacienteRepository, localidadeRepository);
+const criarPacienteService = new CriarPacienteService(pacienteRepository, localidadeRepository, logRepository);
 const listarPacientesService = new ListarPacientesService(pacienteRepository);
 const buscarPacienteService = new BuscarPacienteService(pacienteRepository);
 const atualizarPacienteService = new AtualizarPacienteService(pacienteRepository, localidadeRepository);
@@ -16,9 +17,14 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Erro interno.";
 }
 
+function atorIdDe(res: Response): number | undefined {
+  const user = res.locals.user as { id?: number } | undefined;
+  return user?.id;
+}
+
 export async function createPaciente(req: Request, res: Response) {
   try {
-    const paciente = await criarPacienteService.execute(req.body ?? {});
+    const paciente = await criarPacienteService.execute(req.body ?? {}, atorIdDe(res));
     res.status(201).json({ paciente });
   } catch (error) {
     res.status(400).json({ error: errorMessage(error) });

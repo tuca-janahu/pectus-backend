@@ -4,6 +4,7 @@ import express from "express";
 import authRouter from "./modules/auth/auth.routes";
 import contasRouter from "./modules/contas/contas.routes";
 import localidadesRouter from "./modules/localidades/localidades.routes";
+import logsRouter from "./modules/logs/logs.routes";
 import pacientesRouter from "./modules/pacientes/pacientes.routes";
 
 const app = express();
@@ -21,6 +22,7 @@ app.use(express.json());
 app.use("/auth", authRouter);
 app.use("/contas", contasRouter);
 app.use("/localidades", localidadesRouter);
+app.use("/logs", logsRouter);
 app.use("/pacientes", pacientesRouter);
 
 app.get("/health", (_req, res) => {

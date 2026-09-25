@@ -18,6 +18,7 @@ describe("Ativacao de conta", () => {
   });
 
   afterEach(async () => {
+    await testPrisma.logAuditoria.deleteMany();
     await testPrisma.sessao.deleteMany();
     await testPrisma.tokenAtivacao.deleteMany();
     await testPrisma.identidadeAuth.deleteMany();
