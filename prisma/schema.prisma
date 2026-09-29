@@ -139,6 +139,7 @@ model Paciente {
   nome           String            @db.VarChar(255)
   dataNascimento DateTime          @map("data_nascimento") @db.Date
   genero         String            @db.VarChar(50)
+  fotoChave      String?           @map("foto_chave") @db.VarChar(512)
   criadoEm       DateTime          @default(now()) @map("criado_em") @db.Timestamptz(6)
   atualizadoEm   DateTime          @updatedAt @map("atualizado_em") @db.Timestamptz(6)
   inativadoEm    DateTime?         @map("inativado_em") @db.Timestamptz(6)
@@ -231,6 +232,7 @@ enum TipoEventoAuditoria {
   USUARIO_DESATIVADO_ADMIN
   USUARIO_ATIVADO_PROPRIO
   PACIENTE_CRIADO
+  PACIENTE_FOTO_ATUALIZADA
 }
 
 enum Papel {

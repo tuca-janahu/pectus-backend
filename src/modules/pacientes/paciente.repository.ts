@@ -9,6 +9,7 @@ export interface PacienteResumo {
   genero: string;
   municipio: { codigo: number; nome: string; estado: { sigla: string; nome: string } } | null;
   telefones: Array<{ telefone: string }>;
+  fotoChave: string | null;
   inativadoEm: Date | null;
   criadoEm: Date;
 }
@@ -18,6 +19,7 @@ export interface PacienteRepository {
   listar(filtro?: { nome?: string }): Promise<PacienteResumo[]>;
   buscarPorId(id: number): Promise<PacienteResumo | null>;
   atualizar(id: number, input: AtualizarPacienteData): Promise<PacienteResumo>;
+  atualizarFoto(id: number, fotoChave: string | null): Promise<PacienteResumo>;
 }
 
 const INCLUDE = {
@@ -77,5 +79,9 @@ export class PrismaPacienteRepository implements PacienteRepository {
     const atualizado = await this.buscarPorId(id);
     if (!atualizado) throw new Error("Paciente não encontrado");
     return atualizado;
+  }
+
+  async atualizarFoto(id: number, fotoChave: string | null) {
+    return this.prisma.paciente.update({ where: { id }, data: { fotoChave }, include: INCLUDE });
   }
 }

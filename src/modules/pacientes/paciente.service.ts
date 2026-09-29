@@ -2,6 +2,7 @@ import { atualizarPacienteSchema, criarPacienteSchema, type AtualizarPacienteInp
 import type { PacienteRepository } from "./paciente.repository";
 import type { LocalidadeRepository } from "../localidades/localidade.repository";
 import type { LogRepository } from "../logs/log.repository";
+import type { Storage } from "../storage";
 
 async function validarMunicipio(localidadeRepository: LocalidadeRepository, municipioId: number | undefined) {
   if (municipioId === undefined) return;
@@ -60,5 +61,35 @@ export class AtualizarPacienteService {
     const data = atualizarPacienteSchema.parse(input);
     await validarMunicipio(this.localidadeRepository, data.municipioId);
     return this.pacienteRepository.atualizar(id, data);
+  }
+}
+
+export class EnviarFotoPacienteService {
+  constructor(
+    private readonly pacienteRepository: PacienteRepository,
+    private readonly storage: Storage,
+    private readonly logRepository: LogRepository,
+  ) {}
+
+  async execute(id: number, arquivo: { buffer: Buffer; mimetype: string }, atorId?: number) {
+    const atual = await this.pacienteRepository.buscarPorId(id);
+    if (!atual) throw new Error("Paciente não encontrado");
+
+    const { key } = await this.storage.upload({ folder: "pacientes", body: arquivo.buffer, contentType: arquivo.mimetype });
+
+    if (atual.fotoChave) {
+      await this.storage.delete(atual.fotoChave).catch((err) => console.error("Falha ao remover foto antiga:", err));
+    }
+
+    const atualizado = await this.pacienteRepository.atualizarFoto(id, key);
+
+    await this.logRepository.criar({
+      modulo: "PACIENTES",
+      tipo: "PACIENTE_FOTO_ATUALIZADA",
+      descricao: `Foto atualizada para o paciente: ${atualizado.nome}.`,
+      atorId: atorId ?? null,
+    });
+
+    return atualizado;
   }
 }
