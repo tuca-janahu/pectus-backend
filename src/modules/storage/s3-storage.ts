@@ -22,17 +22,30 @@ export class S3Storage implements Storage {
       forcePathStyle: true,
       credentials: { accessKeyId, secretAccessKey },
     });
+    console.log("[S3 config]", { endpoint, region, bucket, accessKeyId: accessKeyId?.slice(0, 6) });
   }
 
-  async upload({ folder, body, contentType }: UploadInput): Promise<UploadResult> {
-    const key = generateStorageKey(folder, contentType);
+ async upload({ folder, body, contentType }: UploadInput): Promise<UploadResult> {
+  const key = generateStorageKey(folder, contentType);
+  try {
     const upload = new Upload({
       client: this.client,
       params: { Bucket: this.bucket, Key: key, Body: body, ContentType: contentType },
     });
     await upload.done();
     return { key };
+  } catch (err: any) {
+    console.error("[S3 upload error]", {
+      name: err?.name,
+      message: err?.message,
+      status: err?.$metadata?.httpStatusCode,
+      bucket: this.bucket,
+      key,
+      contentType,
+    });
+    throw err;
   }
+}
 
   async getReadUrl({ key, expiresInSeconds = this.defaultExpiresInSeconds }: GetReadUrlInput): Promise<string> {
     const command = new GetObjectCommand({ Bucket: this.bucket, Key: key });
@@ -42,4 +55,5 @@ export class S3Storage implements Storage {
   async delete(key: string): Promise<void> {
     await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
   }
+  
 }

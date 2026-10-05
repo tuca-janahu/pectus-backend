@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { prisma } from "../../db/prisma";
+import { mensagemDeErro } from "../../shared/error-message";
 import { mailer } from "../email";
 import { logRepository } from "../logs/log.repository";
 import { PrismaContaRepository } from "./conta.repository";
@@ -20,7 +21,7 @@ export async function createAccount(req: Request, res: Response) {
     const result = await registerService.execute(req.body ?? {}, atorIdDe(res));
     res.status(201).json(result);
   } catch (error) {
-    res.status(400).json({ error: error instanceof Error ? error.message : "Erro ao criar conta" });
+    res.status(400).json({ error: mensagemDeErro(error) });
   }
 }
 
@@ -38,6 +39,6 @@ export async function updateAccount(req: Request, res: Response) {
     const conta = await updateContaService.execute(id, req.body ?? {}, atorIdDe(res));
     res.json({ conta });
   } catch (error) {
-    res.status(400).json({ error: error instanceof Error ? error.message : "Erro ao atualizar conta" });
+    res.status(400).json({ error: mensagemDeErro(error) });
   }
 }

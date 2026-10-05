@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { prisma } from "../../db/prisma";
+import { mensagemDeErro } from "../../shared/error-message";
 import { PrismaLocalidadeRepository } from "../localidades/localidade.repository";
 import { logRepository } from "../logs/log.repository";
 import { storage } from "../storage";
@@ -22,10 +23,6 @@ const buscarPacienteService = new BuscarPacienteService(pacienteRepository);
 const atualizarPacienteService = new AtualizarPacienteService(pacienteRepository, localidadeRepository);
 const enviarFotoPacienteService = new EnviarFotoPacienteService(pacienteRepository, storage, logRepository);
 
-function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Erro interno.";
-}
-
 function atorIdDe(res: Response): number | undefined {
   const user = res.locals.user as { id?: number } | undefined;
   return user?.id;
@@ -41,7 +38,7 @@ export async function createPaciente(req: Request, res: Response) {
     const paciente = await criarPacienteService.execute(req.body ?? {}, atorIdDe(res));
     res.status(201).json({ paciente: await paraPacientePublico(paciente) });
   } catch (error) {
-    res.status(400).json({ error: errorMessage(error) });
+    res.status(400).json({ error: mensagemDeErro(error) });
   }
 }
 
@@ -58,7 +55,7 @@ export async function getPaciente(req: Request, res: Response) {
     const paciente = await buscarPacienteService.execute(id);
     res.json({ paciente: await paraPacientePublico(paciente) });
   } catch (error) {
-    res.status(404).json({ error: errorMessage(error) });
+    res.status(404).json({ error: mensagemDeErro(error) });
   }
 }
 
@@ -69,7 +66,7 @@ export async function updatePaciente(req: Request, res: Response) {
     const paciente = await atualizarPacienteService.execute(id, req.body ?? {});
     res.json({ paciente: await paraPacientePublico(paciente) });
   } catch (error) {
-    res.status(400).json({ error: errorMessage(error) });
+    res.status(400).json({ error: mensagemDeErro(error) });
   }
 }
 
@@ -85,6 +82,6 @@ export async function enviarFotoPaciente(req: Request, res: Response) {
     );
     res.json({ paciente: await paraPacientePublico(paciente) });
   } catch (error) {
-    res.status(400).json({ error: errorMessage(error) });
+    res.status(400).json({ error: mensagemDeErro(error) });
   }
 }

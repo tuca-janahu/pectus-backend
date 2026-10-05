@@ -11,6 +11,7 @@ import {
 import { ensureLocalidadesFixture, FIXTURE_MUNICIPIO_BELEM } from "../../setup/localidades-fixture";
 import { PrismaLogRepository } from "../../../src/modules/logs/log.repository";
 import { NoopStorage } from "../../../src/modules/storage";
+import { mensagemDeErro } from "../../../src/shared/error-message";
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -156,5 +157,30 @@ describe("Pacientes", () => {
     await expect(
       enviarFotoPacienteService.execute(999999, { buffer: Buffer.from("fake-jpeg"), mimetype: "image/jpeg" }),
     ).rejects.toThrow("Paciente não encontrado");
+  });
+
+  it("ao criar um paciente com CPF já cadastrado, mensagemDeErro devolve uma mensagem segura (não o erro cru do Prisma)", async () => {
+    const cpf = "52998224725";
+    await criarPacienteService.execute({
+      nome: "Primeiro Paciente",
+      dataNascimento: "1990-05-10",
+      genero: "feminino",
+      cpf,
+    });
+
+    let erroCapturado: unknown;
+    try {
+      await criarPacienteService.execute({
+        nome: "Segundo Paciente",
+        dataNascimento: "1991-06-11",
+        genero: "masculino",
+        cpf,
+      });
+    } catch (erro) {
+      erroCapturado = erro;
+    }
+
+    expect(erroCapturado).toBeDefined();
+    expect(mensagemDeErro(erroCapturado)).toBe("Já existe um registro com esse CPF.");
   });
 });

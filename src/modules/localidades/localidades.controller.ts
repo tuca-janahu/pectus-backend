@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { prisma } from "../../db/prisma";
+import { mensagemDeErro } from "../../shared/error-message";
 import { PrismaLocalidadeRepository } from "./localidade.repository";
 import { LocalidadeService } from "./localidade.service";
 
@@ -25,6 +26,6 @@ export async function updateMunicipio(req: Request, res: Response) {
     const municipio = await localidadeService.atualizarMunicipio(codigo, req.body ?? {});
     res.json({ municipio });
   } catch (error) {
-    res.status(400).json({ error: error instanceof Error ? error.message : "Erro ao atualizar município" });
+    res.status(400).json({ error: mensagemDeErro(error) });
   }
 }

@@ -1,12 +1,9 @@
 import type { NextFunction, Request, Response } from "express";
 
+import { mensagemDeErro } from "../../shared/error-message";
 import { AuthService } from "./auth.service";
 import type { ForgotPasswordService } from "./forgot-password.service";
 import type { ResetPasswordService } from "./reset-password.service";
-
-function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Erro interno.";
-}
 
 function contextoDe(req: Request) {
   return { ip: req.ip, userAgent: req.headers["user-agent"] };
@@ -26,7 +23,7 @@ export class AuthController {
       const tokens = await this.authService.activate(token, password);
       return res.status(201).json(tokens);
     } catch (error) {
-      res.status(400).json({ error: errorMessage(error) });
+      res.status(400).json({ error: mensagemDeErro(error) });
     }
   };
 
@@ -40,7 +37,7 @@ export class AuthController {
       const tokens = await this.authService.login(email, password, contextoDe(req));
       return res.json(tokens);
     } catch (error) {
-      return res.status(401).json({ error: errorMessage(error) });
+      return res.status(401).json({ error: mensagemDeErro(error) });
     }
   };
 
@@ -54,7 +51,7 @@ export class AuthController {
       const tokens = await this.authService.loginWithGoogle(code, contextoDe(req));
       return res.json(tokens);
     } catch (error) {
-      return res.status(401).json({ error: errorMessage(error) });
+      return res.status(401).json({ error: mensagemDeErro(error) });
     }
   };
 
@@ -68,7 +65,7 @@ export class AuthController {
       const tokens = await this.authService.refresh(refreshToken);
       return res.json(tokens);
     } catch (error) {
-      return res.status(401).json({ error: errorMessage(error) });
+      return res.status(401).json({ error: mensagemDeErro(error) });
     }
   };
 
@@ -106,7 +103,7 @@ export class AuthController {
       await this.resetPasswordService.execute(token, password);
       return res.status(204).end();
     } catch (error) {
-      return res.status(400).json({ error: errorMessage(error) });
+      return res.status(400).json({ error: mensagemDeErro(error) });
     }
   };
 }
