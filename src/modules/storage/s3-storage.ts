@@ -22,7 +22,6 @@ export class S3Storage implements Storage {
       forcePathStyle: true,
       credentials: { accessKeyId, secretAccessKey },
     });
-    console.log("[S3 config]", { endpoint, region, bucket, accessKeyId: accessKeyId?.slice(0, 6) });
   }
 
  async upload({ folder, body, contentType }: UploadInput): Promise<UploadResult> {
