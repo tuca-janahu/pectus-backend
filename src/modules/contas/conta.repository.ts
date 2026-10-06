@@ -21,6 +21,7 @@ export interface ContaResumo {
   email: string;
   papeis: Array<{ papel: Papel }>;
   medico: { id: number; crm: string } | null;
+  fotoChave: string | null;
   inativadoEm: Date | null;
   ativada: boolean;
   criadoEm: Date;
@@ -34,12 +35,14 @@ export interface ContaRepository {
   listar(): Promise<ContaResumo[]>;
   buscarPorId(id: number): Promise<ContaResumo | null>;
   atualizar(id: number, input: AtualizarContaInput): Promise<ContaResumo>;
+  atualizarFoto(id: number, fotoChave: string | null): Promise<ContaResumo>;
 }
 
 type ContaComRelacoes = {
   id: number;
   nome: string;
   email: string;
+  fotoChave: string | null;
   inativadoEm: Date | null;
   criadoEm: Date;
   papeis: Array<{ papel: Papel }>;
@@ -166,6 +169,15 @@ export class PrismaContaRepository implements ContaRepository {
     return atualizado;
   }
 
+  async atualizarFoto(id: number, fotoChave: string | null): Promise<ContaResumo> {
+    await this.prisma.conta.update({ where: { id }, data: { fotoChave } });
+    const atualizado = await this.buscarPorId(id);
+    if (!atualizado) {
+      throw new Error("Conta nao encontrada");
+    }
+    return atualizado;
+  }
+
   private paraResumo(conta: ContaComRelacoes): ContaResumo {
     return {
       id: conta.id,
@@ -173,6 +185,7 @@ export class PrismaContaRepository implements ContaRepository {
       email: conta.email,
       papeis: conta.papeis.map(({ papel }) => ({ papel })),
       medico: conta.medico,
+      fotoChave: conta.fotoChave,
       inativadoEm: conta.inativadoEm,
       ativada: conta.identidades.length > 0,
       criadoEm: conta.criadoEm,

@@ -1,8 +1,8 @@
 import multer from "multer";
 import type { NextFunction, Request, Response } from "express";
 
-const MAX_FOTO_BYTES = 8 * 1024 * 1024;
-const MIME_PERMITIDOS = ["image/jpeg", "image/png", "image/webp"];
+export const MAX_FOTO_BYTES = 8 * 1024 * 1024;
+export const MIME_PERMITIDOS = ["image/jpeg", "image/png", "image/webp"];
 
 const uploadMulter = multer({
   storage: multer.memoryStorage(),
@@ -15,7 +15,7 @@ const uploadMulter = multer({
   },
 }).single("foto");
 
-export function uploadFotoPaciente(req: Request, res: Response, next: NextFunction) {
+export function uploadFoto(req: Request, res: Response, next: NextFunction) {
   uploadMulter(req, res, (err) => {
     if (err) return res.status(400).json({ error: err.message ?? "Erro ao processar arquivo." });
     next();

@@ -1,13 +1,23 @@
 import { Router } from "express";
 
+import { prisma } from "../../db/prisma";
 import { authenticate } from "../../middleware/authMiddleware";
+import { PrismaContaRepository } from "../contas/conta.repository";
+import { storage } from "../storage";
 import { AuthController } from "./auth.controller";
 import { authService } from "./auth.service";
 import { forgotPasswordService } from "./forgot-password.service";
 import { resetPasswordService } from "./reset-password.service";
 
 const router = Router();
-const authController = new AuthController(authService, forgotPasswordService, resetPasswordService);
+const contaRepository = new PrismaContaRepository(prisma);
+const authController = new AuthController(
+  authService,
+  forgotPasswordService,
+  resetPasswordService,
+  contaRepository,
+  storage,
+);
 
 router.post("/activate", authController.activate);
 router.post("/login", authController.login);

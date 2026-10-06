@@ -1,6 +1,8 @@
-import type { NextFunction, Request, Response } from "express";
+import type { Request, Response } from "express";
 
 import { mensagemDeErro } from "../../shared/error-message";
+import type { ContaRepository } from "../contas/conta.repository";
+import type { Storage } from "../storage";
 import { AuthService } from "./auth.service";
 import type { ForgotPasswordService } from "./forgot-password.service";
 import type { ResetPasswordService } from "./reset-password.service";
@@ -14,6 +16,8 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly forgotPasswordService: ForgotPasswordService,
     private readonly resetPasswordService: ResetPasswordService,
+    private readonly contaRepository: ContaRepository,
+    private readonly storage: Storage,
   ) {}
 
   activate = async (req: Request, res: Response) => {
@@ -79,8 +83,17 @@ export class AuthController {
     return res.status(204).end();
   };
 
-  me = (_req: Request, res: Response, _next: NextFunction) => {
-    return res.json(res.locals.user);
+  me = async (_req: Request, res: Response) => {
+    const base = res.locals.user as {
+      id: number;
+      email: string;
+      nome: string;
+      roles: string[];
+      medico: { crm: string } | null;
+    };
+    const conta = await this.contaRepository.buscarPorId(base.id);
+    const fotoUrl = conta?.fotoChave ? await this.storage.getReadUrl({ key: conta.fotoChave }) : null;
+    return res.json({ ...base, fotoUrl });
   };
 
   forgotPassword = async (req: Request, res: Response) => {

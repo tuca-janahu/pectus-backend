@@ -43,6 +43,14 @@ class ContaRepositoryFalso implements ContaRepository {
     this.contas.set(id, atualizado);
     return atualizado;
   }
+
+  async atualizarFoto(id: number, fotoChave: string | null): Promise<ContaResumo> {
+    const atual = this.contas.get(id);
+    if (!atual) throw new Error("Conta nao encontrada");
+    const atualizado: ContaResumo = { ...atual, fotoChave };
+    this.contas.set(id, atualizado);
+    return atualizado;
+  }
 }
 
 class LogRepositoryFalso implements LogRepository {
@@ -64,6 +72,7 @@ function contaBase(overrides: Partial<ContaResumo> = {}): ContaResumo {
     email: "ana@example.com",
     papeis: [{ papel: "ADMIN" }],
     medico: null,
+    fotoChave: null,
     inativadoEm: null,
     ativada: true,
     criadoEm: new Date(),
