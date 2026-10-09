@@ -7,7 +7,7 @@ export interface PacienteResumo {
   cpf: string | null;
   dataNascimento: Date;
   genero: string;
-  municipio: { codigo: number; nome: string; estado: { sigla: string; nome: string } } | null;
+  municipio: { codigo: number; nome: string; estado: { codigo: number; sigla: string; nome: string } } | null;
   telefones: Array<{ telefone: string }>;
   fotoChave: string | null;
   inativadoEm: Date | null;
