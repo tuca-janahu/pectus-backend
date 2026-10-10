@@ -3,6 +3,7 @@ import cors from "cors";
 import express from "express";
 import authRouter from "./modules/auth/auth.routes";
 import contasRouter from "./modules/contas/contas.routes";
+import fichasEpicriticasRouter from "./modules/fichas-epicriticas/fichas-epicriticas.routes";
 import localidadesRouter from "./modules/localidades/localidades.routes";
 import logsRouter from "./modules/logs/logs.routes";
 import pacientesRouter from "./modules/pacientes/pacientes.routes";
@@ -21,6 +22,7 @@ app.use(express.json());
 
 app.use("/auth", authRouter);
 app.use("/contas", contasRouter);
+app.use("/fichas-epicriticas", fichasEpicriticasRouter);
 app.use("/localidades", localidadesRouter);
 app.use("/logs", logsRouter);
 app.use("/pacientes", pacientesRouter);
