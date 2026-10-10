@@ -156,18 +156,18 @@ export class AuthService {
     } catch { return null; }
   }
 
-  private publicConta(conta: { id: number; email: string; nome: string; papeis: { papel: string }[]; medico: { crm: string } | null }) {
+  private publicConta(conta: { id: number; email: string; nome: string; papeis: { papel: string }[]; medico: { id: number; crm: string } | null }) {
     return {
       id: conta.id,
       email: conta.email,
       nome: conta.nome,
       roles: conta.papeis.map(({ papel }) => papel),
-      medico: conta.medico ? { crm: conta.medico.crm } : null,
+      medico: conta.medico ? { id: conta.medico.id, crm: conta.medico.crm } : null,
     };
   }
 
   private async createSession(
-    conta: { id: number; email: string; nome: string; papeis: { papel: string }[]; medico: { crm: string } | null },
+    conta: { id: number; email: string; nome: string; papeis: { papel: string }[]; medico: { id: number; crm: string } | null },
     db: Pick<Prisma.TransactionClient, "sessao"> = prisma,
   ) {
     const refreshToken = randomBytes(48).toString("base64url");

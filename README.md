@@ -51,3 +51,18 @@ producao sem a `DATABASE_URL` de producao explicitamente configurada.
 ## Endpoint inicial
 
 - `GET /health` retorna `{ "status": "ok" }`
+
+## Fichas epicríticas
+
+As rotas exigem autenticação e papel `ADMIN` ou `MEDICO`:
+
+- `GET /fichas-epicriticas` lista fichas e aceita `pacienteId`, `medicoId`, `status`, `de` e `ate`.
+- `POST /fichas-epicriticas` agenda uma ficha; aceita `procedimento` e `observacoes`, e `iniciarAgora: true` abre o atendimento imediatamente.
+- `GET /fichas-epicriticas/:id` retorna uma ficha.
+- `PATCH /fichas-epicriticas/:id/agendamento` altera médico ou data enquanto a ficha está agendada.
+- `POST /fichas-epicriticas/:id/iniciar` inicia o atendimento e herda os dados clínicos da última ficha concluída do paciente.
+- `PATCH /fichas-epicriticas/:id` salva os dados clínicos enquanto a ficha está em preenchimento.
+- `POST /fichas-epicriticas/:id/concluir` conclui a ficha.
+- `POST /fichas-epicriticas/:id/cancelar` cancela uma ficha aberta.
+
+Uma ficha agendada mantém os defaults do banco. A herança ocorre apenas ao iniciar o atendimento, para usar a ficha concluída mais recente; `observacoes` não é herdado por ser específico de cada consulta.
