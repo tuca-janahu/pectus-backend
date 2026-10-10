@@ -23,7 +23,7 @@ export const registerSchema = z
       context.addIssue({
         code: "custom",
         path: ["roles"],
-        message: "Os papeis não podem se repetir.",
+        message: "Os papéis não podem se repetir.",
       });
     }
 
@@ -31,7 +31,7 @@ export const registerSchema = z
       context.addIssue({
         code: "custom",
         path: ["medico"],
-        message: "O perfil medico e obrigatorio para contas com o papel MEDICO.",
+        message: "O perfil médico é obrigatório para contas com o papel MEDICO.",
       });
     }
 
@@ -39,7 +39,7 @@ export const registerSchema = z
       context.addIssue({
         code: "custom",
         path: ["medico"],
-        message: "O perfil medico so pode ser informado para contas com o papel MEDICO.",
+        message: "O perfil médico só pode ser informado para contas com o papel MEDICO.",
       });
     }
   });
