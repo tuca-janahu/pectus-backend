@@ -34,6 +34,7 @@ function ficha(status: StatusFicha = "AGENDADA"): FichaEpicriticaResumo {
     possuiLaringoscopia: false,
     achadoLaringoscopia: null,
     particularidades: null,
+    googleEventId: null,
     criadoEm: new Date(),
     atualizadoEm: new Date(),
     inativadoEm: null,
@@ -70,6 +71,9 @@ class RepositoryFalso implements FichaEpicriticaRepository {
   async alterarStatus(_id: number, _statusAtual: StatusFicha, novoStatus: StatusFicha) {
     this.atual = { ...this.atual, status: novoStatus };
     return this.atual;
+  }
+  async atualizarGoogleEventId(_id: number, googleEventId: string | null) {
+    this.atual = { ...this.atual, googleEventId };
   }
 }
 

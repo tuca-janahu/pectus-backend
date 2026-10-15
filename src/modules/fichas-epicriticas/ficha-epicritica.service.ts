@@ -9,9 +9,16 @@ import {
   type ReagendarFichaEpicriticaInput,
 } from "./ficha-epicritica.schema";
 import type { FichaEpicriticaRepository } from "./ficha-epicritica.repository";
+import {
+  GoogleCalendarService,
+  googleCalendarService as defaultGoogleCalendarService,
+} from "../google-calendar/google-calendar.service";
 
 export class FichaEpicriticaService {
-  constructor(private readonly repository: FichaEpicriticaRepository) {}
+  constructor(
+    private readonly repository: FichaEpicriticaRepository,
+    private readonly calendarService: GoogleCalendarService = defaultGoogleCalendarService,
+  ) {}
 
   async criar(input: CriarFichaEpicriticaInput) {
     const data = criarFichaEpicriticaSchema.parse(input);
@@ -24,6 +31,15 @@ export class FichaEpicriticaService {
       procedimento: data.procedimento,
       observacoes: data.observacoes,
     });
+
+    // Sincronização não-bloqueante com o Google Calendar
+    this.calendarService.criarEventoParaFicha(ficha.id).catch((err) => {
+      console.error(
+        `[FichaEpicriticaService] Falha não-bloqueante ao criar evento no Google Calendar para ficha #${ficha.id}:`,
+        err,
+      );
+    });
+
     if (!data.iniciarAgora) return ficha;
 
     return this.repository.iniciarComHeranca(ficha.id);
@@ -60,7 +76,17 @@ export class FichaEpicriticaService {
     if (data.medicoId !== undefined && !(await this.repository.medicoAtivoExiste(data.medicoId))) {
       throw new Error("Médico não encontrado ou inativo");
     }
-    return this.repository.reagendar(id, data);
+    const fichaAtualizada = await this.repository.reagendar(id, data);
+
+    // Sincronização não-bloqueante com o Google Calendar
+    this.calendarService.atualizarEventoParaFicha(id).catch((err) => {
+      console.error(
+        `[FichaEpicriticaService] Falha não-bloqueante ao atualizar evento no Google Calendar para ficha #${id}:`,
+        err,
+      );
+    });
+
+    return fichaAtualizada;
   }
 
   async concluir(id: number) {
@@ -76,7 +102,17 @@ export class FichaEpicriticaService {
     if (ficha.status !== "AGENDADA" && ficha.status !== "EM_PREENCHIMENTO") {
       throw new Error("Apenas fichas abertas podem ser canceladas");
     }
-    return this.repository.alterarStatus(id, ficha.status, "CANCELADA");
+    const fichaCancelada = await this.repository.alterarStatus(id, ficha.status, "CANCELADA");
+
+    // Sincronização não-bloqueante com o Google Calendar
+    this.calendarService.removerEventoParaFicha(id).catch((err) => {
+      console.error(
+        `[FichaEpicriticaService] Falha não-bloqueante ao remover evento no Google Calendar para ficha #${id}:`,
+        err,
+      );
+    });
+
+    return fichaCancelada;
   }
 
   private async validarPacienteEMedico(pacienteId: number, medicoId: number) {

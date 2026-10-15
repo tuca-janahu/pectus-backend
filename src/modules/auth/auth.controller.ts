@@ -119,4 +119,31 @@ export class AuthController {
       return res.status(400).json({ error: mensagemDeErro(error) });
     }
   };
+
+  connectGoogleCalendar = async (req: Request, res: Response) => {
+    const user = res.locals.user as { id: number } | undefined;
+    if (!user?.id) return res.status(401).json({ error: "Não autorizado" });
+
+    const { code } = req.body ?? {};
+    if (!code) return res.status(400).json({ error: "Código de autorização ausente" });
+
+    try {
+      await this.authService.connectGoogleCalendar(user.id, code);
+      return res.status(200).json({ message: "Google Calendar conectado com sucesso" });
+    } catch (error) {
+      return res.status(400).json({ error: mensagemDeErro(error) });
+    }
+  };
+
+  googleCalendarStatus = async (_req: Request, res: Response) => {
+    const user = res.locals.user as { id: number } | undefined;
+    if (!user?.id) return res.status(401).json({ error: "Não autorizado" });
+
+    try {
+      const status = await this.authService.getGoogleCalendarStatus(user.id);
+      return res.status(200).json(status);
+    } catch (error) {
+      return res.status(400).json({ error: mensagemDeErro(error) });
+    }
+  };
 }

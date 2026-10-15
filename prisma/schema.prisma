@@ -24,6 +24,7 @@ model Conta {
   tokensAtivacao         TokenAtivacao[]
   tokensRedefinicaoSenha TokenRedefinicaoSenha[]
   logsAuditoria          LogAuditoria[]
+  googleCalendarToken    GoogleCalendarToken?
 
   @@map("contas")
 }
@@ -190,6 +191,7 @@ model FichaEpicritica {
   possuiLaringoscopia   Boolean     @default(false) @map("possui_laringoscopia")
   achadoLaringoscopia   String?     @map("achado_laringoscopia")
   particularidades      String?
+  googleEventId         String?     @map("google_event_id") @db.VarChar(255)
   criadoEm              DateTime    @default(now()) @map("criado_em") @db.Timestamptz(6)
   atualizadoEm          DateTime    @updatedAt @map("atualizado_em") @db.Timestamptz(6)
   inativadoEm           DateTime?   @map("inativado_em") @db.Timestamptz(6)
@@ -200,6 +202,7 @@ model FichaEpicritica {
   @@index([medicoId])
   @@index([status])
   @@index([dataHoraPrevista])
+  @@index([googleEventId])
   @@map("fichas_epicriticas")
 }
 
@@ -253,4 +256,19 @@ enum StatusFicha {
   EM_PREENCHIMENTO
   CONCLUIDA
   CANCELADA
+}
+
+/// Tokens de integração com o Google Calendar do médico/usuário.
+model GoogleCalendarToken {
+  id           Int       @id @default(autoincrement())
+  contaId      Int       @unique @map("conta_id")
+  refreshToken String    @map("refresh_token") @db.Text
+  accessToken  String?   @map("access_token") @db.Text
+  expiraEm     DateTime? @map("expira_em") @db.Timestamptz(6)
+  escopo       String?   @db.VarChar(500)
+  criadoEm     DateTime  @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm DateTime  @updatedAt @map("atualizado_em") @db.Timestamptz(6)
+  conta        Conta     @relation(fields: [contaId], references: [id], onDelete: Cascade)
+
+  @@map("google_calendar_tokens")
 }

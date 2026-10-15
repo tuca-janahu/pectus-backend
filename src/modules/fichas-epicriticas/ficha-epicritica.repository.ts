@@ -46,6 +46,7 @@ export interface FichaEpicriticaRepository {
   atualizarCamposClinicos(id: number, data: AtualizarFichaEpicriticaData): Promise<FichaEpicriticaResumo>;
   reagendar(id: number, data: ReagendarFichaEpicriticaData): Promise<FichaEpicriticaResumo>;
   alterarStatus(id: number, statusAtual: StatusFicha, novoStatus: StatusFicha): Promise<FichaEpicriticaResumo>;
+  atualizarGoogleEventId(id: number, googleEventId: string | null): Promise<void>;
 }
 
 export class PrismaFichaEpicriticaRepository implements FichaEpicriticaRepository {
@@ -144,5 +145,12 @@ export class PrismaFichaEpicriticaRepository implements FichaEpicriticaRepositor
     });
     if (alterada.count !== 1) throw new Error("A ficha foi alterada por outro usuário");
     return this.prisma.fichaEpicritica.findUniqueOrThrow({ where: { id }, include: INCLUDE });
+  }
+
+  async atualizarGoogleEventId(id: number, googleEventId: string | null): Promise<void> {
+    await this.prisma.fichaEpicritica.update({
+      where: { id },
+      data: { googleEventId },
+    });
   }
 }
