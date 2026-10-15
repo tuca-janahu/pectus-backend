@@ -26,6 +26,8 @@ router.post("/refresh", authController.refresh);
 router.post("/logout", authController.logout);
 router.post("/forgot-password", authController.forgotPassword);
 router.post("/reset-password", authController.resetPassword);
+router.post("/google/calendar-connect", authenticate, authController.connectGoogleCalendar);
+router.get("/google/calendar-status", authenticate, authController.googleCalendarStatus);
 router.get("/me", authenticate, authController.me);
 
 export default router;

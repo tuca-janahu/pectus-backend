@@ -7,6 +7,7 @@ import type { Prisma } from "../../generated/prisma/client";
 import { logRepository } from "../logs/log.repository";
 import { hashToken as hash } from "./token-hash";
 import { OAuth2Client } from "google-auth-library";
+import { googleCalendarService } from "../google-calendar/google-calendar.service";
 
 const googleClient = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID,
@@ -124,6 +125,12 @@ export class AuthService {
       throw new Error("Conta não encontrada ou inativa. Fale com a administração.");
     }
 
+    if (tokens.refresh_token || tokens.access_token) {
+      await googleCalendarService.salvarTokens(conta.id, tokens).catch((err) => {
+        console.error("Falha ao salvar tokens do Google Calendar no login:", err);
+      });
+    }
+
     await logRepository.criar({
       modulo: "AUTENTICACAO",
       tipo: "LOGIN_SUCESSO",
@@ -133,6 +140,22 @@ export class AuthService {
     });
 
     return this.createSession(conta);
+  }
+
+  async connectGoogleCalendar(contaId: number, code: string) {
+    const conta = await prisma.conta.findUnique({ where: { id: contaId } });
+    if (!conta || conta.inativadoEm) {
+      throw new Error("Conta não encontrada ou inativa.");
+    }
+    await googleCalendarService.conectarComCode(contaId, code);
+  }
+
+  async getGoogleCalendarStatus(contaId: number) {
+    const token = await prisma.googleCalendarToken.findUnique({
+      where: { contaId },
+      select: { id: true, criadoEm: true, atualizadoEm: true },
+    });
+    return { conectado: !!token };
   }
 
   async refresh(refreshToken: string) {
