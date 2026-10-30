@@ -106,12 +106,12 @@ export class GoogleCalendarService {
     return google.calendar({ version: "v3", auth: oauth2Client });
   }
 
-  async criarEventoParaFicha(fichaId: number): Promise<string | null> {
+  async criarEventoParaAtendimento(fichaId: number): Promise<string | null> {
     try {
-      const ficha = await prisma.fichaEpicritica.findUnique({
+      const ficha = await prisma.atendimento.findUnique({
         where: { id: fichaId },
         include: {
-          paciente: { select: { id: true, nome: true } },
+          ficha: { include: { paciente: { select: { id: true, nome: true } } } },
           medico: {
             select: {
               id: true,
@@ -147,10 +147,10 @@ export class GoogleCalendarService {
       const termino = calcularDataTermino(inicio, DEFAULT_APPOINTMENT_DURATION_MINUTES);
 
       const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-      const linkFicha = `${frontendUrl}/fichas/${ficha.id}`;
+      const linkFicha = `${frontendUrl}/atendimentos/${ficha.id}`;
 
       const detalhes = [
-        `Paciente: ${ficha.paciente.nome}`,
+        `Paciente: ${ficha.ficha.paciente.nome}`,
         `Médico: ${ficha.medico.conta.nome} (CRM: ${ficha.medico.crm})`,
         ficha.procedimento ? `Procedimento: ${ficha.procedimento}` : null,
         ficha.observacoes ? `Observações: ${ficha.observacoes}` : null,
@@ -162,7 +162,7 @@ export class GoogleCalendarService {
       const response = await calendar.events.insert({
         calendarId: "primary",
         requestBody: {
-          summary: `Consulta: ${ficha.paciente.nome} - Traque Med`,
+          summary: `Consulta: ${ficha.ficha.paciente.nome} - Traque Med`,
           description: detalhes,
           start: {
             dateTime: inicio.toISOString(),
@@ -183,7 +183,7 @@ export class GoogleCalendarService {
       const googleEventId = response.data.id ?? null;
 
       if (googleEventId) {
-        await prisma.fichaEpicritica.update({
+        await prisma.atendimento.update({
           where: { id: fichaId },
           data: { googleEventId },
         });
@@ -203,12 +203,12 @@ export class GoogleCalendarService {
     }
   }
 
-  async atualizarEventoParaFicha(fichaId: number): Promise<void> {
+  async atualizarEventoParaAtendimento(fichaId: number): Promise<void> {
     try {
-      const ficha = await prisma.fichaEpicritica.findUnique({
+      const ficha = await prisma.atendimento.findUnique({
         where: { id: fichaId },
         include: {
-          paciente: { select: { id: true, nome: true } },
+          ficha: { include: { paciente: { select: { id: true, nome: true } } } },
           medico: {
             select: {
               id: true,
@@ -223,7 +223,7 @@ export class GoogleCalendarService {
       if (!ficha) return;
 
       if (!ficha.googleEventId) {
-        await this.criarEventoParaFicha(fichaId);
+        await this.criarEventoParaAtendimento(fichaId);
         return;
       }
 
@@ -234,10 +234,10 @@ export class GoogleCalendarService {
       const termino = calcularDataTermino(inicio, DEFAULT_APPOINTMENT_DURATION_MINUTES);
 
       const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-      const linkFicha = `${frontendUrl}/fichas/${ficha.id}`;
+      const linkFicha = `${frontendUrl}/atendimentos/${ficha.id}`;
 
       const detalhes = [
-        `Paciente: ${ficha.paciente.nome}`,
+        `Paciente: ${ficha.ficha.paciente.nome}`,
         `Médico: ${ficha.medico.conta.nome} (CRM: ${ficha.medico.crm})`,
         ficha.procedimento ? `Procedimento: ${ficha.procedimento}` : null,
         ficha.observacoes ? `Observações: ${ficha.observacoes}` : null,
@@ -250,7 +250,7 @@ export class GoogleCalendarService {
         calendarId: "primary",
         eventId: ficha.googleEventId,
         requestBody: {
-          summary: `Consulta: ${ficha.paciente.nome} - Traque Med`,
+          summary: `Consulta: ${ficha.ficha.paciente.nome} - Traque Med`,
           description: detalhes,
           start: {
             dateTime: inicio.toISOString(),
@@ -272,9 +272,9 @@ export class GoogleCalendarService {
     }
   }
 
-  async removerEventoParaFicha(fichaId: number): Promise<void> {
+  async removerEventoParaAtendimento(fichaId: number): Promise<void> {
     try {
-      const ficha = await prisma.fichaEpicritica.findUnique({
+      const ficha = await prisma.atendimento.findUnique({
         where: { id: fichaId },
         include: {
           medico: {
@@ -296,7 +296,7 @@ export class GoogleCalendarService {
         eventId: ficha.googleEventId,
       });
 
-      await prisma.fichaEpicritica.update({
+      await prisma.atendimento.update({
         where: { id: fichaId },
         data: { googleEventId: null },
       });

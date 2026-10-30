@@ -48,7 +48,9 @@ describe("Logs de auditoria", () => {
     await testPrisma.logAuditoria.deleteMany();
     await testPrisma.sessao.deleteMany();
     await testPrisma.telefone.deleteMany();
-    await testPrisma.fichaEpicritica.deleteMany();
+    await testPrisma.midiaAtendimento.deleteMany();
+    await testPrisma.atendimento.deleteMany();
+    await testPrisma.ficha.deleteMany();
     await testPrisma.identidadeAuth.deleteMany();
     await testPrisma.medico.deleteMany();
     await testPrisma.tokenAtivacao.deleteMany();

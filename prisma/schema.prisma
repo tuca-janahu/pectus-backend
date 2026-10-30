@@ -106,7 +106,7 @@ model Medico {
   criadoEm     DateTime          @default(now()) @map("criado_em") @db.Timestamptz(6)
   atualizadoEm DateTime          @updatedAt @map("atualizado_em") @db.Timestamptz(6)
   inativadoEm  DateTime?         @map("inativado_em") @db.Timestamptz(6)
-  fichas       FichaEpicritica[]
+  atendimentos Atendimento[]
   conta        Conta             @relation(fields: [contaId], references: [id])
   telefones    Telefone[]
 
@@ -145,7 +145,8 @@ model Paciente {
   criadoEm       DateTime          @default(now()) @map("criado_em") @db.Timestamptz(6)
   atualizadoEm   DateTime          @updatedAt @map("atualizado_em") @db.Timestamptz(6)
   inativadoEm    DateTime?         @map("inativado_em") @db.Timestamptz(6)
-  fichas         FichaEpicritica[]
+  ficha          Ficha?
+  historicoCadastral Json         @default("[]") @map("historico_cadastral")
   municipio      Municipio?        @relation(fields: [municipioId], references: [codigo], onDelete: Restrict)
   telefones      Telefone[]
 
@@ -170,14 +171,12 @@ model Telefone {
   @@map("telefones")
 }
 
-model FichaEpicritica {
-  id                    Int         @id @default(autoincrement())
-  pacienteId            Int         @map("paciente_id")
-  medicoId              Int         @map("medico_id")
-  dataHoraPrevista      DateTime    @map("data_hora_prevista") @db.Timestamptz(6)
-  status                StatusFicha @default(AGENDADA)
-  procedimento          String?
-  observacoes           String?
+model Ficha {
+  id                    Int       @id @default(autoincrement())
+  pacienteId            Int       @unique @map("paciente_id")
+  situacao              SituacaoFicha @default(EM_TRATAMENTO)
+  motivoEncerramento    MotivoEncerramento? @map("motivo_encerramento")
+  dataEncerramento      DateTime? @map("data_encerramento") @db.Date
   mecanismoLesao        String?     @map("mecanismo_lesao")
   dataInjuriaTraqueal   DateTime?   @map("data_injuria_traqueal") @db.Date
   vocaliza              Boolean     @default(false)
@@ -191,19 +190,55 @@ model FichaEpicritica {
   possuiLaringoscopia   Boolean     @default(false) @map("possui_laringoscopia")
   achadoLaringoscopia   String?     @map("achado_laringoscopia")
   particularidades      String?
+  criadoEm              DateTime    @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm          DateTime    @updatedAt @map("atualizado_em") @db.Timestamptz(6)
+  versao                 Int         @default(0)
+  paciente              Paciente    @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
+  atendimentos          Atendimento[]
+
+  @@map("fichas")
+}
+
+model Atendimento {
+  id                    Int         @id @default(autoincrement())
+  fichaId               Int         @map("ficha_id")
+  medicoId              Int         @map("medico_id")
+  dataHoraPrevista      DateTime    @map("data_hora_prevista") @db.Timestamptz(6)
+  status                StatusAtendimento @default(AGENDADA)
+  procedimento          String?
+  procedimentoOutro     String?     @map("procedimento_outro")
+  observacoes           String?
+  historico             Json        @default("[]")
+  versao                 Int         @default(0)
   googleEventId         String?     @map("google_event_id") @db.VarChar(255)
   criadoEm              DateTime    @default(now()) @map("criado_em") @db.Timestamptz(6)
   atualizadoEm          DateTime    @updatedAt @map("atualizado_em") @db.Timestamptz(6)
-  inativadoEm           DateTime?   @map("inativado_em") @db.Timestamptz(6)
-  medico                Medico      @relation(fields: [medicoId], references: [id])
-  paciente              Paciente    @relation(fields: [pacienteId], references: [id])
+  ficha                 Ficha       @relation(fields: [fichaId], references: [id], onDelete: Restrict)
+  medico                Medico      @relation(fields: [medicoId], references: [id], onDelete: Restrict)
+  midias                MidiaAtendimento[]
 
-  @@index([pacienteId])
+  @@index([fichaId, dataHoraPrevista])
   @@index([medicoId])
   @@index([status])
   @@index([dataHoraPrevista])
   @@index([googleEventId])
-  @@map("fichas_epicriticas")
+  @@map("atendimentos")
+}
+
+model MidiaAtendimento {
+  id            Int       @id @default(autoincrement())
+  atendimentoId Int       @map("atendimento_id")
+  chave         String    @unique @db.VarChar(512)
+  nomeOriginal  String    @map("nome_original") @db.VarChar(255)
+  mimeType      String    @map("mime_type") @db.VarChar(100)
+  tamanhoBytes  Int       @map("tamanho_bytes")
+  criadoPorId   Int       @map("criado_por_id")
+  criadoEm      DateTime  @default(now()) @map("criado_em") @db.Timestamptz(6)
+  removidoEm    DateTime? @map("removido_em") @db.Timestamptz(6)
+  atendimento   Atendimento @relation(fields: [atendimentoId], references: [id], onDelete: Restrict)
+
+  @@index([atendimentoId, removidoEm])
+  @@map("midias_atendimento")
 }
 
 model LogAuditoria {
@@ -251,11 +286,22 @@ enum ProvedorAuth {
   GOOGLE
 }
 
-enum StatusFicha {
+enum StatusAtendimento {
   AGENDADA
   EM_PREENCHIMENTO
   CONCLUIDA
   CANCELADA
+}
+
+enum SituacaoFicha {
+  EM_TRATAMENTO
+  FORA_DE_TRATAMENTO
+}
+
+enum MotivoEncerramento {
+  ALTA
+  ABANDONO
+  OBITO
 }
 
 /// Tokens de integração com o Google Calendar do médico/usuário.

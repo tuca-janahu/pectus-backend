@@ -30,7 +30,9 @@ describe("UpdateContaFotoService (integração)", () => {
     await testPrisma.logAuditoria.deleteMany();
     await testPrisma.tokenAtivacao.deleteMany();
     await testPrisma.telefone.deleteMany();
-    await testPrisma.fichaEpicritica.deleteMany();
+    await testPrisma.midiaAtendimento.deleteMany();
+    await testPrisma.atendimento.deleteMany();
+    await testPrisma.ficha.deleteMany();
     await testPrisma.medico.deleteMany();
     await testPrisma.contaPapel.deleteMany();
     await testPrisma.conta.deleteMany();

@@ -37,6 +37,8 @@ describe("Pacientes", () => {
   afterEach(async () => {
     await testPrisma.logAuditoria.deleteMany();
     await testPrisma.telefone.deleteMany({ where: { pacienteId: { not: null } } });
+    await testPrisma.atendimento.deleteMany();
+    await testPrisma.ficha.deleteMany();
     await testPrisma.paciente.deleteMany();
   });
 

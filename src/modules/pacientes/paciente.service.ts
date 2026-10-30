@@ -36,7 +36,7 @@ export class CriarPacienteService {
 export class ListarPacientesService {
   constructor(private readonly pacienteRepository: PacienteRepository) {}
 
-  execute(filtro?: { nome?: string }) {
+  execute(filtro?: { nome?: string; incluirInativos?: boolean }) {
     return this.pacienteRepository.listar(filtro);
   }
 }
@@ -57,10 +57,10 @@ export class AtualizarPacienteService {
     private readonly localidadeRepository: LocalidadeRepository,
   ) {}
 
-  async execute(id: number, input: AtualizarPacienteInput) {
+  async execute(id: number, input: AtualizarPacienteInput, atorId?: number) {
     const data = atualizarPacienteSchema.parse(input);
     await validarMunicipio(this.localidadeRepository, data.municipioId);
-    return this.pacienteRepository.atualizar(id, data);
+    return this.pacienteRepository.atualizar(id, data, atorId);
   }
 }
 

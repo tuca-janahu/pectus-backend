@@ -44,7 +44,8 @@ export async function createPaciente(req: Request, res: Response) {
 
 export async function listPacientes(req: Request, res: Response) {
   const nome = typeof req.query.nome === "string" ? req.query.nome : undefined;
-  const pacientes = await listarPacientesService.execute({ nome });
+  const incluirInativos = req.query.incluirInativos === "true";
+  const pacientes = await listarPacientesService.execute({ nome, incluirInativos });
   res.json({ pacientes: await Promise.all(pacientes.map(paraPacientePublico)) });
 }
 
@@ -63,7 +64,7 @@ export async function updatePaciente(req: Request, res: Response) {
   const id = Number(req.params.id);
   if (!Number.isInteger(id)) return res.status(400).json({ error: "Id inválido" });
   try {
-    const paciente = await atualizarPacienteService.execute(id, req.body ?? {});
+    const paciente = await atualizarPacienteService.execute(id, req.body ?? {}, atorIdDe(res));
     res.json({ paciente: await paraPacientePublico(paciente) });
   } catch (error) {
     res.status(400).json({ error: mensagemDeErro(error) });
