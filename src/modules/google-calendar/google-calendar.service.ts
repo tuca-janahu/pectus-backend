@@ -272,6 +272,31 @@ export class GoogleCalendarService {
     }
   }
 
+  async transferirEventoParaAtendimento(atendimentoId: number, contaAnteriorId: number, eventoAnteriorId: string | null): Promise<void> {
+    try {
+      if (eventoAnteriorId) {
+        const calendarioAnterior = await this.getAuthenticatedCalendar(contaAnteriorId);
+        if (!calendarioAnterior) {
+          console.error(`[GoogleCalendarService] Calendário anterior indisponível para transferir atendimento #${atendimentoId}.`);
+          return;
+        }
+        try {
+          await calendarioAnterior.events.delete({ calendarId: "primary", eventId: eventoAnteriorId });
+        } catch (error) {
+          const resposta = error as { code?: number; response?: { status?: number } };
+          if (resposta.code !== 404 && resposta.response?.status !== 404) throw error;
+        }
+        await prisma.atendimento.updateMany({
+          where: { id: atendimentoId, googleEventId: eventoAnteriorId },
+          data: { googleEventId: null },
+        });
+      }
+      await this.criarEventoParaAtendimento(atendimentoId);
+    } catch (error) {
+      console.error(`[GoogleCalendarService] Erro ao transferir evento do atendimento #${atendimentoId}:`, error);
+    }
+  }
+
   async removerEventoParaAtendimento(fichaId: number): Promise<void> {
     try {
       const ficha = await prisma.atendimento.findUnique({

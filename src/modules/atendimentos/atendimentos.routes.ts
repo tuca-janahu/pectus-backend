@@ -137,7 +137,7 @@ router.post("/atendimentos/:id/midias", receberMidia, async (req, res) => {
         const historico = Array.isArray(atual.historico) ? [...atual.historico] : [];
         historico.push({ tipo: "MIDIA_ADICIONADA", em: new Date().toISOString(), autorContaId: ator(res).id,
           campos: { midiaId: midiaCriada.id, nomeOriginal: midiaCriada.nomeOriginal, mimeType: midiaCriada.mimeType } });
-        await tx.atendimento.update({ where: { id: atendimentoId }, data: { historico, versao: { increment: 1 } } });
+        await tx.atendimento.update({ where: { id: atendimentoId }, data: { historico } });
         return midiaCriada;
       }, { isolationLevel: "Serializable" });
       res.status(201).json({ midia: { ...midia, url } });
@@ -157,7 +157,7 @@ router.delete("/atendimentos/:id/midias/:midiaId", async (req, res) => {
       const historico = Array.isArray(atual.historico) ? [...atual.historico] : [];
       historico.push({ tipo: "MIDIA_REMOVIDA", em: new Date().toISOString(), autorContaId: ator(res).id,
         campos: { midiaId: midia.id, nomeOriginal: midia.nomeOriginal } });
-      await tx.atendimento.update({ where: { id: atendimentoId }, data: { historico, versao: { increment: 1 } } });
+      await tx.atendimento.update({ where: { id: atendimentoId }, data: { historico } });
     }, { isolationLevel: "Serializable" });
     res.status(204).end();
   } catch (error) { erro(res, error); }

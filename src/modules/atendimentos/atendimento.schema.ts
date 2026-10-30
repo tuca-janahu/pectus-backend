@@ -1,16 +1,16 @@
 import { z } from "zod";
 
 export const PROCEDIMENTOS = [
-  { nome: "Exame de rotina", descricao: "Avaliação periódica da condição clínica." },
-  { nome: "Traqueoscopia", descricao: "Avaliação endoscópica da traqueia." },
-  { nome: "Traqueoscopia + fístula", descricao: "Avaliação da traqueia e de fístula." },
-  { nome: "Retirada de tubo T", descricao: "Avaliação e retirada do tubo T." },
-  { nome: "Broncoscopia", descricao: "Avaliação endoscópica das vias aéreas inferiores." },
-  { nome: "Pré-operatório", descricao: "Avaliação anterior à cirurgia." },
-  { nome: "Avaliação para decanulação", descricao: "Avaliação para possível retirada da cânula." },
-  { nome: "Endoscopia de controle", descricao: "Exame endoscópico de acompanhamento." },
-  { nome: "Curativo + avaliação", descricao: "Curativo acompanhado de avaliação clínica." },
-  { nome: "Outro", descricao: "Procedimento não listado; informe qual." },
+  { nome: "Exame de rotina", descricao: "" },
+  { nome: "Traqueoscopia", descricao: "" },
+  { nome: "Traqueoscopia + fístula", descricao: "" },
+  { nome: "Retirada de tubo T", descricao: "" },
+  { nome: "Broncoscopia", descricao: "" },
+  { nome: "Pré-operatório", descricao: "" },
+  { nome: "Avaliação para decanulação", descricao: "" },
+  { nome: "Endoscopia de controle", descricao: "" },
+  { nome: "Curativo + avaliação", descricao: "" },
+  { nome: "Outro", descricao: "" },
 ] as const;
 
 const procedimentoSchema = z.object({

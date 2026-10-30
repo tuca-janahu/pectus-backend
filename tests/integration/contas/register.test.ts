@@ -76,7 +76,7 @@ describe("RegisterService", () => {
         email: "sem-crm@example.com",
         roles: ["MEDICO"],
       }),
-    ).rejects.toThrow("O perfil medico e obrigatorio para contas com o papel MEDICO.");
+    ).rejects.toThrow("O perfil médico é obrigatório para contas com o papel MEDICO.");
 
     expect(await testPrisma.conta.count()).toBe(0);
   });

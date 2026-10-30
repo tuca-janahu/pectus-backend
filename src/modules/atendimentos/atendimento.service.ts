@@ -17,7 +17,7 @@ export interface Ator {
 
 const include = {
   ficha: { include: { paciente: { select: { id: true, nome: true, inativadoEm: true } } } },
-  medico: { select: { id: true, crm: true, conta: { select: { nome: true } } } },
+  medico: { select: { id: true, crm: true, contaId: true, conta: { select: { nome: true } } } },
 } as const;
 
 type AtendimentoCompleto = Prisma.AtendimentoGetPayload<{ include: typeof include }>;
@@ -137,7 +137,6 @@ export class AtendimentoService {
       });
       if (!medico) throw new AtendimentoErro("Médico não encontrado ou inativo", 404);
       await this.semConflito(tx, ficha.id, data.medicoId, inicio);
-      const reativar = ficha.situacao === "FORA_DE_TRATAMENTO";
       const criado = await tx.atendimento.create({
         data: {
           fichaId: ficha.id,
@@ -147,17 +146,17 @@ export class AtendimentoService {
           procedimentoOutro: data.procedimentoOutro,
           observacoes: data.observacoes,
           status: data.iniciarAgora ? "EM_PREENCHIMENTO" : "AGENDADA",
-          historico: ([evento("CRIADO", ator.id, { status: { antes: null, depois: data.iniciarAgora ? "EM_PREENCHIMENTO" : "AGENDADA" } }), ...(reativar ? [evento("SITUACAO_ALTERADA", ator.id, {
+          historico: ([evento("CRIADO", ator.id, { status: { antes: null, depois: data.iniciarAgora ? "EM_PREENCHIMENTO" : "AGENDADA" } }), ...(data.iniciarAgora && ficha.situacao === "FORA_DE_TRATAMENTO" ? [evento("SITUACAO_ALTERADA", ator.id, {
             situacao: { antes: ficha.situacao, depois: "EM_TRATAMENTO" },
             motivoEncerramento: { antes: ficha.motivoEncerramento, depois: null },
             dataEncerramento: { antes: ficha.dataEncerramento, depois: null },
           })] : [])]) as Prisma.InputJsonValue,
         },
       });
-      if (reativar) {
+      if (data.iniciarAgora && ficha.situacao === "FORA_DE_TRATAMENTO") {
         await tx.ficha.update({
           where: { id: ficha.id },
-          data: { situacao: "EM_TRATAMENTO", motivoEncerramento: null, dataEncerramento: null, versao: { increment: 1 } },
+          data: { situacao: "EM_TRATAMENTO", motivoEncerramento: null, dataEncerramento: null },
         });
       }
       return tx.atendimento.findUniqueOrThrow({ where: { id: criado.id }, include });
@@ -178,7 +177,7 @@ export class AtendimentoService {
       const reativar = atual.ficha.situacao === "FORA_DE_TRATAMENTO";
       if (reativar) {
         await tx.ficha.update({ where: { id: atual.fichaId }, data: {
-          situacao: "EM_TRATAMENTO", motivoEncerramento: null, dataEncerramento: null, versao: { increment: 1 },
+          situacao: "EM_TRATAMENTO", motivoEncerramento: null, dataEncerramento: null,
         } });
       }
       return tx.atendimento.update({
@@ -190,7 +189,7 @@ export class AtendimentoService {
             motivoEncerramento: { antes: atual.ficha.motivoEncerramento, depois: null },
             dataEncerramento: { antes: atual.ficha.dataEncerramento, depois: null },
           })] : []),
-        ] as Prisma.InputJsonValue, versao: { increment: 1 } },
+        ] as Prisma.InputJsonValue },
         include,
       });
     }, { isolationLevel: "Serializable" });
@@ -221,7 +220,7 @@ export class AtendimentoService {
         ...(data.procedimentoOutro !== undefined ? { procedimentoOutro: data.procedimentoOutro } : {}),
         ...(data.observacoes !== undefined ? { observacoes: data.observacoes } : {}),
       });
-      return tx.atendimento.update({
+      const atualizado = await tx.atendimento.update({
         where: { id },
         data: {
           medicoId,
@@ -230,13 +229,18 @@ export class AtendimentoService {
           procedimentoOutro: data.procedimentoOutro === undefined ? undefined : data.procedimentoOutro,
           observacoes: data.observacoes === undefined ? undefined : data.observacoes,
           historico: [...historicoAtual(atual.historico), ...(Object.keys(campos).length ? [evento("REAGENDADO", ator.id, campos)] : [])] as Prisma.InputJsonValue,
-          versao: { increment: 1 },
         },
         include,
       });
+      return { atendimento: atualizado, medicoAnteriorContaId: atual.medico.contaId,
+        eventoAnteriorId: atual.googleEventId, transferido: medicoId !== atual.medicoId };
     }, { isolationLevel: "Serializable" });
-    void googleCalendarService.atualizarEventoParaAtendimento(id);
-    return resultado;
+    if (resultado.transferido) {
+      void googleCalendarService.transferirEventoParaAtendimento(id, resultado.medicoAnteriorContaId, resultado.eventoAnteriorId);
+    } else {
+      void googleCalendarService.atualizarEventoParaAtendimento(id);
+    }
+    return resultado.atendimento;
   }
 
   private async salvarClinico(tx: Db, atual: AtendimentoCompleto, clinico: unknown, ator: Ator, tipo: string,
@@ -255,7 +259,7 @@ export class AtendimentoService {
     if (Object.keys(mudancas).length) {
       await tx.ficha.update({
         where: { id: atual.fichaId },
-        data: { ...normalizados, versao: { increment: 1 } } as Prisma.FichaUpdateInput,
+        data: normalizados as Prisma.FichaUpdateInput,
       });
     }
     return eventos;
@@ -275,22 +279,12 @@ export class AtendimentoService {
       }
       const alteracoesClinicas = data.clinico ? diferencas(atual.ficha as unknown as Record<string, unknown>, data.clinico) : {};
       if (corrigir && Object.keys(alteracoesClinicas).length) {
-        const posteriores = await tx.atendimento.findMany({
-          where: { fichaId: atual.fichaId, dataHoraPrevista: { gt: atual.dataHoraPrevista } },
-          select: { historico: true },
+        const posterior = await tx.atendimento.findFirst({
+          where: { fichaId: atual.fichaId, dataHoraPrevista: { gt: atual.dataHoraPrevista },
+            status: { in: ["EM_PREENCHIMENTO", "CONCLUIDA"] } },
+          select: { id: true },
         });
-        const camposPosteriores = new Set<string>();
-        for (const posterior of posteriores) {
-          for (const item of historicoAtual(posterior.historico)) {
-            const campos = item.campos;
-            if (campos && typeof campos === "object" && !Array.isArray(campos)) {
-              Object.keys(campos).forEach((campo) => camposPosteriores.add(campo));
-            }
-          }
-        }
-        if (Object.keys(alteracoesClinicas).some((campo) => camposPosteriores.has(campo))) {
-          throw new AtendimentoErro("Campo clínico alterado em atendimento posterior; corrija o registro mais recente", 409);
-        }
+        if (posterior) throw new AtendimentoErro("Campos da ficha só podem ser corrigidos no atendimento clínico mais recente", 409);
       }
       const extras = diferencas(atual as unknown as Record<string, unknown>, {
         ...(data.procedimento !== undefined ? { procedimento: data.procedimento } : {}),
@@ -306,7 +300,6 @@ export class AtendimentoService {
           procedimentoOutro: data.procedimentoOutro === undefined ? undefined : data.procedimentoOutro,
           observacoes: data.observacoes === undefined ? undefined : data.observacoes,
           historico: historico as Prisma.InputJsonValue,
-          versao: { increment: 1 },
         },
         include,
       });
@@ -325,7 +318,7 @@ export class AtendimentoService {
         where: { id },
         data: { status: "CONCLUIDA", historico: [
           ...historicoAtual(atual.historico), evento("CONCLUIDO", ator.id, { status: { antes: "EM_PREENCHIMENTO", depois: "CONCLUIDA" } }),
-        ] as Prisma.InputJsonValue, versao: { increment: 1 } },
+        ] as Prisma.InputJsonValue },
         include,
       });
     }, { isolationLevel: "Serializable" });
@@ -346,7 +339,6 @@ export class AtendimentoService {
           historico: [...historicoAtual(atual.historico), evento("CANCELADO", ator.id, {
             status: { antes: atual.status, depois: "CANCELADA" },
           })] as Prisma.InputJsonValue,
-          versao: { increment: 1 },
         },
         include,
       });
@@ -388,7 +380,6 @@ export class AtendimentoService {
             situacao: data.situacao,
             motivoEncerramento: data.situacao === "EM_TRATAMENTO" ? null : data.motivoEncerramento,
             dataEncerramento: data.situacao === "EM_TRATAMENTO" ? null : data.dataEncerramento,
-            versao: { increment: 1 },
           },
         });
       }
@@ -397,7 +388,6 @@ export class AtendimentoService {
         data: {
           historico: [...historicoAtual(atual.historico), ...(Object.keys(mudancas).length
             ? [evento("SITUACAO_ALTERADA", ator.id, mudancas)] : [])] as Prisma.InputJsonValue,
-          versao: { increment: 1 },
         },
         include,
       });

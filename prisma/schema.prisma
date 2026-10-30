@@ -192,7 +192,6 @@ model Ficha {
   particularidades      String?
   criadoEm              DateTime    @default(now()) @map("criado_em") @db.Timestamptz(6)
   atualizadoEm          DateTime    @updatedAt @map("atualizado_em") @db.Timestamptz(6)
-  versao                 Int         @default(0)
   paciente              Paciente    @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
   atendimentos          Atendimento[]
 
@@ -209,7 +208,6 @@ model Atendimento {
   procedimentoOutro     String?     @map("procedimento_outro")
   observacoes           String?
   historico             Json        @default("[]")
-  versao                 Int         @default(0)
   googleEventId         String?     @map("google_event_id") @db.VarChar(255)
   criadoEm              DateTime    @default(now()) @map("criado_em") @db.Timestamptz(6)
   atualizadoEm          DateTime    @updatedAt @map("atualizado_em") @db.Timestamptz(6)
