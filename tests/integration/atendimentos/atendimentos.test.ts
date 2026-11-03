@@ -68,6 +68,20 @@ describe("Atendimentos longitudinais (integração)", () => {
     expect(novo.id).not.toBe(agendado.id);
   });
 
+  it("cria apenas agendamentos e rejeita o fluxo de início imediato", async () => {
+    const paciente = await db.paciente.create({ data: {
+      nome: "Paciente agendamento", dataNascimento: new Date("1990-01-01"), genero: "OUTRO", ficha: { create: {} },
+    } });
+    const responsavel = await medico("agendamento");
+    const entrada = { pacienteId: paciente.id, medicoId: responsavel.medico.id,
+      dataHoraPrevista: "2030-01-10T14:00:00Z", procedimento: "Exame de rotina" };
+    await expect(service.criar({ ...entrada, iniciarAgora: true }, responsavel)).rejects.toBeDefined();
+    const criado = await service.criar(entrada, responsavel);
+    expect(criado.status).toBe("AGENDADA");
+    expect((await service.fichaDoPaciente(paciente.id)).situacao).toBe("EM_TRATAMENTO");
+    expect((await service.iniciar(criado.id, responsavel)).status).toBe("EM_PREENCHIMENTO");
+  });
+
   it("reativa após alta e bloqueia novos atendimentos após óbito", async () => {
     const paciente = await db.paciente.create({ data: {
       nome: "Paciente situação", dataNascimento: new Date("1990-01-01"), genero: "OUTRO", ficha: { create: {} },

@@ -106,10 +106,10 @@ export class GoogleCalendarService {
     return google.calendar({ version: "v3", auth: oauth2Client });
   }
 
-  async criarEventoParaAtendimento(fichaId: number): Promise<string | null> {
+  async criarEventoParaAtendimento(atendimentoId: number): Promise<string | null> {
     try {
-      const ficha = await prisma.atendimento.findUnique({
-        where: { id: fichaId },
+      const atendimento = await prisma.atendimento.findUnique({
+        where: { id: atendimentoId },
         include: {
           ficha: { include: { paciente: { select: { id: true, nome: true } } } },
           medico: {
@@ -123,38 +123,38 @@ export class GoogleCalendarService {
         },
       });
 
-      if (!ficha) {
-        console.warn(`[GoogleCalendarService] Ficha #${fichaId} não encontrada.`);
+      if (!atendimento) {
+        console.warn(`[GoogleCalendarService] Atendimento #${atendimentoId} não encontrada.`);
         return null;
       }
 
-      if (ficha.googleEventId) {
+      if (atendimento.googleEventId) {
         console.log(
-          `[GoogleCalendarService] Ficha #${fichaId} já possui evento no Google Calendar (${ficha.googleEventId}).`,
+          `[GoogleCalendarService] Atendimento #${atendimentoId} já possui evento no Google Calendar (${atendimento.googleEventId}).`,
         );
-        return ficha.googleEventId;
+        return atendimento.googleEventId;
       }
 
-      const calendar = await this.getAuthenticatedCalendar(ficha.medico.contaId);
+      const calendar = await this.getAuthenticatedCalendar(atendimento.medico.contaId);
       if (!calendar) {
         console.info(
-          `[GoogleCalendarService] Médico #${ficha.medico.id} (${ficha.medico.conta.nome}) não possui Google Calendar conectado. Evento não sincronizado.`,
+          `[GoogleCalendarService] Médico #${atendimento.medico.id} (${atendimento.medico.conta.nome}) não possui Google Calendar conectado. Evento não sincronizado.`,
         );
         return null;
       }
 
-      const inicio = new Date(ficha.dataHoraPrevista);
+      const inicio = new Date(atendimento.dataHoraPrevista);
       const termino = calcularDataTermino(inicio, DEFAULT_APPOINTMENT_DURATION_MINUTES);
 
       const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-      const linkFicha = `${frontendUrl}/atendimentos/${ficha.id}`;
+      const linkAtendimento = `${frontendUrl}/atendimentos/${atendimento.id}/editar`;
 
       const detalhes = [
-        `Paciente: ${ficha.ficha.paciente.nome}`,
-        `Médico: ${ficha.medico.conta.nome} (CRM: ${ficha.medico.crm})`,
-        ficha.procedimento ? `Procedimento: ${ficha.procedimento}` : null,
-        ficha.observacoes ? `Observações: ${ficha.observacoes}` : null,
-        `Prontuário no sistema: ${linkFicha}`,
+        `Paciente: ${atendimento.ficha.paciente.nome}`,
+        `Médico: ${atendimento.medico.conta.nome} (CRM: ${atendimento.medico.crm})`,
+        atendimento.procedimento ? `Procedimento: ${atendimento.procedimento}` : null,
+        atendimento.observacoes ? `Observações: ${atendimento.observacoes}` : null,
+        `Prontuário no sistema: ${linkAtendimento}`,
       ]
         .filter(Boolean)
         .join("\n");
@@ -162,7 +162,7 @@ export class GoogleCalendarService {
       const response = await calendar.events.insert({
         calendarId: "primary",
         requestBody: {
-          summary: `Consulta: ${ficha.ficha.paciente.nome} - Traque Med`,
+          summary: `Consulta: ${atendimento.ficha.paciente.nome} - Traque Med`,
           description: detalhes,
           start: {
             dateTime: inicio.toISOString(),
@@ -184,29 +184,29 @@ export class GoogleCalendarService {
 
       if (googleEventId) {
         await prisma.atendimento.update({
-          where: { id: fichaId },
+          where: { id: atendimentoId },
           data: { googleEventId },
         });
 
         console.info(
-          `[GoogleCalendarService] Evento criado no Google Calendar para Ficha #${fichaId} (Event ID: ${googleEventId}).`,
+          `[GoogleCalendarService] Evento criado no Google Calendar para Atendimento #${atendimentoId} (Event ID: ${googleEventId}).`,
         );
       }
 
       return googleEventId;
     } catch (error) {
       console.error(
-        `[GoogleCalendarService] Erro ao sincronizar criação da Ficha #${fichaId} com Google Calendar:`,
+        `[GoogleCalendarService] Erro ao sincronizar criação da Atendimento #${atendimentoId} com Google Calendar:`,
         error,
       );
       return null;
     }
   }
 
-  async atualizarEventoParaAtendimento(fichaId: number): Promise<void> {
+  async atualizarEventoParaAtendimento(atendimentoId: number): Promise<void> {
     try {
-      const ficha = await prisma.atendimento.findUnique({
-        where: { id: fichaId },
+      const atendimento = await prisma.atendimento.findUnique({
+        where: { id: atendimentoId },
         include: {
           ficha: { include: { paciente: { select: { id: true, nome: true } } } },
           medico: {
@@ -220,37 +220,37 @@ export class GoogleCalendarService {
         },
       });
 
-      if (!ficha) return;
+      if (!atendimento) return;
 
-      if (!ficha.googleEventId) {
-        await this.criarEventoParaAtendimento(fichaId);
+      if (!atendimento.googleEventId) {
+        await this.criarEventoParaAtendimento(atendimentoId);
         return;
       }
 
-      const calendar = await this.getAuthenticatedCalendar(ficha.medico.contaId);
+      const calendar = await this.getAuthenticatedCalendar(atendimento.medico.contaId);
       if (!calendar) return;
 
-      const inicio = new Date(ficha.dataHoraPrevista);
+      const inicio = new Date(atendimento.dataHoraPrevista);
       const termino = calcularDataTermino(inicio, DEFAULT_APPOINTMENT_DURATION_MINUTES);
 
       const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-      const linkFicha = `${frontendUrl}/atendimentos/${ficha.id}`;
+      const linkAtendimento = `${frontendUrl}/atendimentos/${atendimento.id}/editar`;
 
       const detalhes = [
-        `Paciente: ${ficha.ficha.paciente.nome}`,
-        `Médico: ${ficha.medico.conta.nome} (CRM: ${ficha.medico.crm})`,
-        ficha.procedimento ? `Procedimento: ${ficha.procedimento}` : null,
-        ficha.observacoes ? `Observações: ${ficha.observacoes}` : null,
-        `Prontuário no sistema: ${linkFicha}`,
+        `Paciente: ${atendimento.ficha.paciente.nome}`,
+        `Médico: ${atendimento.medico.conta.nome} (CRM: ${atendimento.medico.crm})`,
+        atendimento.procedimento ? `Procedimento: ${atendimento.procedimento}` : null,
+        atendimento.observacoes ? `Observações: ${atendimento.observacoes}` : null,
+        `Prontuário no sistema: ${linkAtendimento}`,
       ]
         .filter(Boolean)
         .join("\n");
 
       await calendar.events.patch({
         calendarId: "primary",
-        eventId: ficha.googleEventId,
+        eventId: atendimento.googleEventId,
         requestBody: {
-          summary: `Consulta: ${ficha.ficha.paciente.nome} - Traque Med`,
+          summary: `Consulta: ${atendimento.ficha.paciente.nome} - Traque Med`,
           description: detalhes,
           start: {
             dateTime: inicio.toISOString(),
@@ -262,11 +262,11 @@ export class GoogleCalendarService {
       });
 
       console.info(
-        `[GoogleCalendarService] Evento atualizado no Google Calendar para Ficha #${fichaId} (Event ID: ${ficha.googleEventId}).`,
+        `[GoogleCalendarService] Evento atualizado no Google Calendar para Atendimento #${atendimentoId} (Event ID: ${atendimento.googleEventId}).`,
       );
     } catch (error) {
       console.error(
-        `[GoogleCalendarService] Erro ao atualizar evento da Ficha #${fichaId} no Google Calendar:`,
+        `[GoogleCalendarService] Erro ao atualizar evento da Atendimento #${atendimentoId} no Google Calendar:`,
         error,
       );
     }
@@ -297,10 +297,10 @@ export class GoogleCalendarService {
     }
   }
 
-  async removerEventoParaAtendimento(fichaId: number): Promise<void> {
+  async removerEventoParaAtendimento(atendimentoId: number): Promise<void> {
     try {
-      const ficha = await prisma.atendimento.findUnique({
-        where: { id: fichaId },
+      const atendimento = await prisma.atendimento.findUnique({
+        where: { id: atendimentoId },
         include: {
           medico: {
             select: {
@@ -311,27 +311,27 @@ export class GoogleCalendarService {
         },
       });
 
-      if (!ficha || !ficha.googleEventId) return;
+      if (!atendimento || !atendimento.googleEventId) return;
 
-      const calendar = await this.getAuthenticatedCalendar(ficha.medico.contaId);
+      const calendar = await this.getAuthenticatedCalendar(atendimento.medico.contaId);
       if (!calendar) return;
 
       await calendar.events.delete({
         calendarId: "primary",
-        eventId: ficha.googleEventId,
+        eventId: atendimento.googleEventId,
       });
 
       await prisma.atendimento.update({
-        where: { id: fichaId },
+        where: { id: atendimentoId },
         data: { googleEventId: null },
       });
 
       console.info(
-        `[GoogleCalendarService] Evento removido do Google Calendar para Ficha #${fichaId} (Event ID: ${ficha.googleEventId}).`,
+        `[GoogleCalendarService] Evento removido do Google Calendar para Atendimento #${atendimentoId} (Event ID: ${atendimento.googleEventId}).`,
       );
     } catch (error) {
       console.error(
-        `[GoogleCalendarService] Erro ao remover evento da Ficha #${fichaId} no Google Calendar:`,
+        `[GoogleCalendarService] Erro ao remover evento da Atendimento #${atendimentoId} no Google Calendar:`,
         error,
       );
     }

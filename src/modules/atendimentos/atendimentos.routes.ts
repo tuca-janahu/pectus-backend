@@ -6,12 +6,22 @@ import { Prisma } from "../../generated/prisma/client";
 import { prisma } from "../../db/prisma";
 import { authenticate, authorize } from "../../middleware/authMiddleware";
 import { mensagemDeErro } from "../../shared/error-message";
+import { emailsDosAutores, historicoComEmails } from "../../shared/historico-autores";
 import { AtendimentoErro, AtendimentoService, type Ator } from "./atendimento.service";
 import { PROCEDIMENTOS } from "./atendimento.schema";
 import { NoopStorage, storage } from "../storage";
 
 const router = Router();
 const service = new AtendimentoService(prisma);
+
+async function atendimentosComAutores<T extends { historico: Prisma.JsonValue }>(atendimentos: T[]) {
+  const emails = await emailsDosAutores(prisma, atendimentos.map((item) => item.historico));
+  return atendimentos.map((item) => ({ ...item, historico: historicoComEmails(item.historico, emails) }));
+}
+
+async function atendimentoComAutores<T extends { historico: Prisma.JsonValue }>(atendimento: T) {
+  return (await atendimentosComAutores([atendimento]))[0];
+}
 const LIMITE_VIDEO_BYTES = Number(process.env.MAX_VIDEO_MB ?? 100) * 1024 * 1024;
 const uploadMidia = multer({ storage: multer.memoryStorage(), limits: { fileSize: Math.max(5 * 1024 * 1024, LIMITE_VIDEO_BYTES) } });
 const receberMidia = (req: Request, res: Response, next: NextFunction) => {
@@ -70,43 +80,43 @@ router.get("/pacientes/:pacienteId/ficha", async (req, res) => {
   catch (error) { erro(res, error); }
 });
 router.get("/atendimentos", async (req, res) => {
-  try { res.json({ atendimentos: await service.listar(req.query) }); }
+  try { res.json({ atendimentos: await atendimentosComAutores(await service.listar(req.query)) }); }
   catch (error) { erro(res, error); }
 });
 router.post("/atendimentos", async (req, res) => {
-  try { res.status(201).json({ atendimento: await service.criar(req.body, ator(res)) }); }
+  try { res.status(201).json({ atendimento: await atendimentoComAutores(await service.criar(req.body, ator(res))) }); }
   catch (error) { erro(res, error); }
 });
 router.get("/atendimentos/:id", async (req, res) => {
-  try { res.json({ atendimento: await service.buscarPorId(id(req.params.id as string)) }); }
+  try { res.json({ atendimento: await atendimentoComAutores(await service.buscarPorId(id(req.params.id as string))) }); }
   catch (error) { erro(res, error); }
 });
 router.patch("/atendimentos/:id/agendamento", async (req, res) => {
-  try { res.json({ atendimento: await service.reagendar(id(req.params.id as string), req.body, ator(res)) }); }
+  try { res.json({ atendimento: await atendimentoComAutores(await service.reagendar(id(req.params.id as string), req.body, ator(res))) }); }
   catch (error) { erro(res, error); }
 });
 router.patch("/atendimentos/:id", async (req, res) => {
-  try { res.json({ atendimento: await service.atualizar(id(req.params.id as string), req.body, ator(res)) }); }
+  try { res.json({ atendimento: await atendimentoComAutores(await service.atualizar(id(req.params.id as string), req.body, ator(res))) }); }
   catch (error) { erro(res, error); }
 });
 router.post("/atendimentos/:id/iniciar", async (req, res) => {
-  try { res.json({ atendimento: await service.iniciar(id(req.params.id as string), ator(res)) }); }
+  try { res.json({ atendimento: await atendimentoComAutores(await service.iniciar(id(req.params.id as string), ator(res))) }); }
   catch (error) { erro(res, error); }
 });
 router.post("/atendimentos/:id/concluir", async (req, res) => {
-  try { res.json({ atendimento: await service.concluir(id(req.params.id as string), ator(res)) }); }
+  try { res.json({ atendimento: await atendimentoComAutores(await service.concluir(id(req.params.id as string), ator(res))) }); }
   catch (error) { erro(res, error); }
 });
 router.post("/atendimentos/:id/cancelar", async (req, res) => {
-  try { res.json({ atendimento: await service.cancelar(id(req.params.id as string), ator(res)) }); }
+  try { res.json({ atendimento: await atendimentoComAutores(await service.cancelar(id(req.params.id as string), ator(res))) }); }
   catch (error) { erro(res, error); }
 });
 router.post("/atendimentos/:id/corrigir", async (req, res) => {
-  try { res.json({ atendimento: await service.atualizar(id(req.params.id as string), req.body, ator(res), true) }); }
+  try { res.json({ atendimento: await atendimentoComAutores(await service.atualizar(id(req.params.id as string), req.body, ator(res), true)) }); }
   catch (error) { erro(res, error); }
 });
 router.post("/atendimentos/:id/situacao", async (req, res) => {
-  try { res.json({ atendimento: await service.alterarSituacao(id(req.params.id as string), req.body, ator(res)) }); }
+  try { res.json({ atendimento: await atendimentoComAutores(await service.alterarSituacao(id(req.params.id as string), req.body, ator(res))) }); }
   catch (error) { erro(res, error); }
 });
 

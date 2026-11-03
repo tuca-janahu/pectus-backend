@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { prisma } from "../../db/prisma";
 import { mensagemDeErro } from "../../shared/error-message";
+import { emailsDosAutores, historicoComEmails } from "../../shared/historico-autores";
 import { PrismaLocalidadeRepository } from "../localidades/localidade.repository";
 import { logRepository } from "../logs/log.repository";
 import { storage } from "../storage";
@@ -30,7 +31,10 @@ function atorIdDe(res: Response): number | undefined {
 
 async function paraPacientePublico(paciente: PacienteResumo) {
   const { fotoChave, ...resto } = paciente;
-  return { ...resto, fotoUrl: fotoChave ? await storage.getReadUrl({ key: fotoChave }) : null };
+  const fotoUrl = fotoChave ? await storage.getReadUrl({ key: fotoChave }) : null;
+  if (!paciente.historicoCadastral) return { ...resto, fotoUrl };
+  const emails = await emailsDosAutores(prisma, [paciente.historicoCadastral]);
+  return { ...resto, fotoUrl, historicoCadastral: historicoComEmails(paciente.historicoCadastral, emails) };
 }
 
 export async function createPaciente(req: Request, res: Response) {

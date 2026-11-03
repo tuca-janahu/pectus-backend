@@ -118,9 +118,8 @@ export class AtendimentoService {
     if (!ator.roles.includes("ADMIN") && ator.medico?.id !== data.medicoId) {
       throw new AtendimentoErro("Não é permitido agendar para outro médico", 403);
     }
-    const inicio = data.iniciarAgora ? new Date() : data.dataHoraPrevista;
-    if (!inicio) throw new AtendimentoErro("Informe data e horário", 400);
-    if (!data.iniciarAgora && inicio <= new Date()) {
+    const inicio = data.dataHoraPrevista;
+    if (inicio <= new Date()) {
       throw new AtendimentoErro("Não é permitido agendar no passado", 400);
     }
     const atendimento = await this.prisma.$transaction(async (tx) => {
@@ -145,20 +144,10 @@ export class AtendimentoService {
           procedimento: data.procedimento,
           procedimentoOutro: data.procedimentoOutro,
           observacoes: data.observacoes,
-          status: data.iniciarAgora ? "EM_PREENCHIMENTO" : "AGENDADA",
-          historico: ([evento("CRIADO", ator.id, { status: { antes: null, depois: data.iniciarAgora ? "EM_PREENCHIMENTO" : "AGENDADA" } }), ...(data.iniciarAgora && ficha.situacao === "FORA_DE_TRATAMENTO" ? [evento("SITUACAO_ALTERADA", ator.id, {
-            situacao: { antes: ficha.situacao, depois: "EM_TRATAMENTO" },
-            motivoEncerramento: { antes: ficha.motivoEncerramento, depois: null },
-            dataEncerramento: { antes: ficha.dataEncerramento, depois: null },
-          })] : [])]) as Prisma.InputJsonValue,
+          status: "AGENDADA",
+          historico: [evento("CRIADO", ator.id, { status: { antes: null, depois: "AGENDADA" } })] as Prisma.InputJsonValue,
         },
       });
-      if (data.iniciarAgora && ficha.situacao === "FORA_DE_TRATAMENTO") {
-        await tx.ficha.update({
-          where: { id: ficha.id },
-          data: { situacao: "EM_TRATAMENTO", motivoEncerramento: null, dataEncerramento: null },
-        });
-      }
       return tx.atendimento.findUniqueOrThrow({ where: { id: criado.id }, include });
     }, { isolationLevel: "Serializable" });
     void googleCalendarService.criarEventoParaAtendimento(atendimento.id);

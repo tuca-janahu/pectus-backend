@@ -47,12 +47,11 @@ export const camposClinicosSchema = z.object({
 export const criarAtendimentoSchema = z.object({
   pacienteId: z.number().int().positive(),
   medicoId: z.number().int().positive(),
-  dataHoraPrevista: z.coerce.date().optional(),
+  dataHoraPrevista: z.coerce.date(),
   procedimento: z.string().trim().nullable().optional(),
   procedimentoOutro: z.string().trim().max(255).nullable().optional(),
   observacoes: z.string().trim().nullable().optional(),
-  iniciarAgora: z.boolean().default(false),
-}).superRefine((value, ctx) => {
+}).strict().superRefine((value, ctx) => {
   const result = procedimentoSchema.safeParse(value);
   if (!result.success) result.error.issues.forEach((issue) => ctx.addIssue({ code: "custom", path: issue.path, message: issue.message }));
 });

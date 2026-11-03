@@ -8,6 +8,13 @@ describe("regras de atendimento", () => {
     expect(criarAtendimentoSchema.safeParse(base).success).toBe(true);
   });
 
+  it("exige horário e não aceita o atalho de início imediato", () => {
+    const { dataHoraPrevista: _dataHoraPrevista, ...semHorario } = base;
+    expect(criarAtendimentoSchema.safeParse(semHorario).success).toBe(false);
+    expect(criarAtendimentoSchema.safeParse({ ...base, iniciarAgora: true }).success).toBe(false);
+    expect(criarAtendimentoSchema.safeParse({ ...base, iniciarAgora: false }).success).toBe(false);
+  });
+
   it("exige especificação para Outro", () => {
     expect(criarAtendimentoSchema.safeParse({ ...base, procedimento: "Outro" }).success).toBe(false);
     expect(criarAtendimentoSchema.safeParse({ ...base, procedimento: "Outro", procedimentoOutro: "Procedimento especial" }).success).toBe(true);
