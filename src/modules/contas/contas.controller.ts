@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { z } from "zod";
 import { prisma } from "../../db/prisma";
 import { mensagemDeErro } from "../../shared/error-message";
 import { mailer } from "../email";
@@ -65,4 +66,24 @@ export async function uploadContaFoto(req: Request, res: Response) {
   } catch (error) {
     res.status(400).json({ error: mensagemDeErro(error) });
   }
+}
+
+const notificacaoSchema = z.object({
+  ativa: z.boolean(),
+  antecedencias: z.array(z.number().int().min(1).max(1440)).max(10),
+});
+
+export async function updateNotificacao(req: Request, res: Response) {
+  const id = atorIdDe(res);
+  if (!id) return res.status(401).json({ error: "Não autenticado" });
+  const result = notificacaoSchema.safeParse(req.body);
+  if (!result.success) return res.status(400).json({ error: result.error.message });
+  await prisma.conta.update({
+    where: { id },
+    data: {
+      notificacaoAtiva: result.data.ativa,
+      notificacaoAntecedencias: result.data.antecedencias,
+    },
+  });
+  res.status(204).end();
 }

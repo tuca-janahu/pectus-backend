@@ -25,6 +25,8 @@ export interface ContaResumo {
   inativadoEm: Date | null;
   ativada: boolean;
   criadoEm: Date;
+  notificacaoAtiva: boolean;
+  notificacaoAntecedencias: number[];
 }
 
 export interface ContaRepository {
@@ -48,6 +50,8 @@ type ContaComRelacoes = {
   papeis: Array<{ papel: Papel }>;
   medico: { id: number; crm: string } | null;
   identidades: Array<{ id: number }>;
+  notificacaoAtiva: boolean;
+  notificacaoAntecedencias: number[];
 };
 
 export class PrismaContaRepository implements ContaRepository {
@@ -189,6 +193,8 @@ export class PrismaContaRepository implements ContaRepository {
       inativadoEm: conta.inativadoEm,
       ativada: conta.identidades.length > 0,
       criadoEm: conta.criadoEm,
+      notificacaoAtiva: conta.notificacaoAtiva,
+      notificacaoAntecedencias: conta.notificacaoAntecedencias,
     };
   }
 }

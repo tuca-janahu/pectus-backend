@@ -10,6 +10,7 @@ import { emailsDosAutores, historicoComEmails } from "../../shared/historico-aut
 import { AtendimentoErro, AtendimentoService, type Ator } from "./atendimento.service";
 import { PROCEDIMENTOS } from "./atendimento.schema";
 import { NoopStorage, storage } from "../storage";
+import { logRepository } from "../logs/log.repository";
 
 const router = Router();
 const service = new AtendimentoService(prisma);
@@ -84,16 +85,32 @@ router.get("/atendimentos", async (req, res) => {
   catch (error) { erro(res, error); }
 });
 router.post("/atendimentos", async (req, res) => {
-  try { res.status(201).json({ atendimento: await atendimentoComAutores(await service.criar(req.body, ator(res))) }); }
-  catch (error) { erro(res, error); }
+  try {
+    const atendimento = await service.criar(req.body, ator(res));
+    res.status(201).json({ atendimento: await atendimentoComAutores(atendimento) });
+    void logRepository.criar({
+      modulo: "ATENDIMENTOS",
+      tipo: "ATENDIMENTO_CRIADO",
+      descricao: `Atendimento agendado para ${atendimento.ficha.paciente.nome}.`,
+      atorId: ator(res).id,
+    });
+  } catch (error) { erro(res, error); }
 });
 router.get("/atendimentos/:id", async (req, res) => {
   try { res.json({ atendimento: await atendimentoComAutores(await service.buscarPorId(id(req.params.id as string))) }); }
   catch (error) { erro(res, error); }
 });
 router.patch("/atendimentos/:id/agendamento", async (req, res) => {
-  try { res.json({ atendimento: await atendimentoComAutores(await service.reagendar(id(req.params.id as string), req.body, ator(res))) }); }
-  catch (error) { erro(res, error); }
+  try {
+    const atendimento = await service.reagendar(id(req.params.id as string), req.body, ator(res));
+    res.json({ atendimento: await atendimentoComAutores(atendimento) });
+    void logRepository.criar({
+      modulo: "ATENDIMENTOS",
+      tipo: "ATENDIMENTO_REAGENDADO",
+      descricao: `Atendimento reagendado para ${atendimento.ficha.paciente.nome}.`,
+      atorId: ator(res).id,
+    });
+  } catch (error) { erro(res, error); }
 });
 router.patch("/atendimentos/:id", async (req, res) => {
   try { res.json({ atendimento: await atendimentoComAutores(await service.atualizar(id(req.params.id as string), req.body, ator(res))) }); }
@@ -108,8 +125,16 @@ router.post("/atendimentos/:id/concluir", async (req, res) => {
   catch (error) { erro(res, error); }
 });
 router.post("/atendimentos/:id/cancelar", async (req, res) => {
-  try { res.json({ atendimento: await atendimentoComAutores(await service.cancelar(id(req.params.id as string), ator(res))) }); }
-  catch (error) { erro(res, error); }
+  try {
+    const atendimento = await service.cancelar(id(req.params.id as string), ator(res));
+    res.json({ atendimento: await atendimentoComAutores(atendimento) });
+    void logRepository.criar({
+      modulo: "ATENDIMENTOS",
+      tipo: "ATENDIMENTO_CANCELADO",
+      descricao: `Atendimento cancelado para ${atendimento.ficha.paciente.nome}.`,
+      atorId: ator(res).id,
+    });
+  } catch (error) { erro(res, error); }
 });
 router.post("/atendimentos/:id/corrigir", async (req, res) => {
   try { res.json({ atendimento: await atendimentoComAutores(await service.atualizar(id(req.params.id as string), req.body, ator(res), true)) }); }

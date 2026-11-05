@@ -93,7 +93,12 @@ export class AuthController {
     };
     const conta = await this.contaRepository.buscarPorId(base.id);
     const fotoUrl = conta?.fotoChave ? await this.storage.getReadUrl({ key: conta.fotoChave }) : null;
-    return res.json({ ...base, fotoUrl });
+    return res.json({
+      ...base,
+      fotoUrl,
+      notificacaoAtiva: conta?.notificacaoAtiva ?? false,
+      notificacaoAntecedencias: conta?.notificacaoAntecedencias ?? [],
+    });
   };
 
   forgotPassword = async (req: Request, res: Response) => {

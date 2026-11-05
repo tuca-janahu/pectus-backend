@@ -23,8 +23,10 @@ model Conta {
   sessoes                Sessao[]
   tokensAtivacao         TokenAtivacao[]
   tokensRedefinicaoSenha TokenRedefinicaoSenha[]
-  logsAuditoria          LogAuditoria[]
-  googleCalendarToken    GoogleCalendarToken?
+  logsAuditoria            LogAuditoria[]
+  googleCalendarToken      GoogleCalendarToken?
+  notificacaoAtiva         Boolean  @default(false) @map("notificacao_ativa")
+  notificacaoAntecedencias Int[]    @default([]) @map("notificacao_antecedencias")
 
   @@map("contas")
 }
@@ -260,6 +262,7 @@ enum ModuloAuditoria {
   AUTENTICACAO
   USUARIOS
   PACIENTES
+  ATENDIMENTOS
 }
 
 enum TipoEventoAuditoria {
@@ -272,6 +275,9 @@ enum TipoEventoAuditoria {
   USUARIO_FOTO_ATUALIZADA
   PACIENTE_CRIADO
   PACIENTE_FOTO_ATUALIZADA
+  ATENDIMENTO_CRIADO
+  ATENDIMENTO_REAGENDADO
+  ATENDIMENTO_CANCELADO
 }
 
 enum Papel {
