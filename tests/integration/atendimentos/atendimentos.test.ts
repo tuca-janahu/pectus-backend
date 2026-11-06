@@ -32,7 +32,7 @@ describe("Atendimentos longitudinais (integração)", () => {
 
   it("usa uma ficha única, impede sobreposição e permite correção por outro médico", async () => {
     const paciente = await db.paciente.create({ data: {
-      nome: "Paciente de teste", dataNascimento: new Date("1990-01-01"), genero: "OUTRO",
+      nome: "Paciente de teste", dataNascimento: new Date("1990-01-01"), genero: "MASCULINO",
       ficha: { create: {} },
     } });
     const primeiro = await medico("a");
@@ -42,7 +42,7 @@ describe("Atendimentos longitudinais (integração)", () => {
     await expect(service.criar({ pacienteId: paciente.id, medicoId: segundo.medico.id, dataHoraPrevista: "2030-01-10T14:30:00Z", procedimento: "Broncoscopia" }, segundo)).rejects.toMatchObject({ status: 409 });
     await service.criar({ pacienteId: paciente.id, medicoId: segundo.medico.id, dataHoraPrevista: "2030-01-10T15:00:00Z", procedimento: "Broncoscopia" }, segundo);
     const outroPaciente = await db.paciente.create({ data: {
-      nome: "Outro paciente", dataNascimento: new Date("1991-01-01"), genero: "OUTRO", ficha: { create: {} },
+      nome: "Outro paciente", dataNascimento: new Date("1991-01-01"), genero: "MASCULINO", ficha: { create: {} },
     } });
     await expect(service.criar({ pacienteId: outroPaciente.id, medicoId: primeiro.medico.id, dataHoraPrevista: "2030-01-10T14:30:00Z", procedimento: "Exame de rotina" }, primeiro)).rejects.toMatchObject({ status: 409 });
     expect(await db.ficha.count({ where: { pacienteId: paciente.id } })).toBe(1);
@@ -58,7 +58,7 @@ describe("Atendimentos longitudinais (integração)", () => {
 
   it("mantém cancelamento definitivo sem ocupar o horário", async () => {
     const paciente = await db.paciente.create({ data: {
-      nome: "Paciente cancelamento", dataNascimento: new Date("1990-01-01"), genero: "OUTRO", ficha: { create: {} },
+      nome: "Paciente cancelamento", dataNascimento: new Date("1990-01-01"), genero: "MASCULINO", ficha: { create: {} },
     } });
     const responsavel = await medico("cancelamento");
     const agendado = await service.criar({ pacienteId: paciente.id, medicoId: responsavel.medico.id, dataHoraPrevista: "2030-01-10T14:00:00Z", procedimento: "Exame de rotina" }, responsavel);
@@ -70,7 +70,7 @@ describe("Atendimentos longitudinais (integração)", () => {
 
   it("cria apenas agendamentos e rejeita o fluxo de início imediato", async () => {
     const paciente = await db.paciente.create({ data: {
-      nome: "Paciente agendamento", dataNascimento: new Date("1990-01-01"), genero: "OUTRO", ficha: { create: {} },
+      nome: "Paciente agendamento", dataNascimento: new Date("1990-01-01"), genero: "MASCULINO", ficha: { create: {} },
     } });
     const responsavel = await medico("agendamento");
     const entrada = { pacienteId: paciente.id, medicoId: responsavel.medico.id,
@@ -84,7 +84,7 @@ describe("Atendimentos longitudinais (integração)", () => {
 
   it("reativa após alta e bloqueia novos atendimentos após óbito", async () => {
     const paciente = await db.paciente.create({ data: {
-      nome: "Paciente situação", dataNascimento: new Date("1990-01-01"), genero: "OUTRO", ficha: { create: {} },
+      nome: "Paciente situação", dataNascimento: new Date("1990-01-01"), genero: "MASCULINO", ficha: { create: {} },
     } });
     const responsavel = await medico("situacao");
     const primeiro = await service.criar({ pacienteId: paciente.id, medicoId: responsavel.medico.id, dataHoraPrevista: "2030-01-10T14:00:00Z", procedimento: "Exame de rotina" }, responsavel);
@@ -100,7 +100,7 @@ describe("Atendimentos longitudinais (integração)", () => {
 
   it("não reativa a ficha quando o retorno agendado após alta é cancelado", async () => {
     const paciente = await db.paciente.create({ data: {
-      nome: "Paciente retorno cancelado", dataNascimento: new Date("1990-01-01"), genero: "OUTRO", ficha: { create: {} },
+      nome: "Paciente retorno cancelado", dataNascimento: new Date("1990-01-01"), genero: "MASCULINO", ficha: { create: {} },
     } });
     const responsavel = await medico("retorno-cancelado");
     const primeiro = await service.criar({ pacienteId: paciente.id, medicoId: responsavel.medico.id,
@@ -117,7 +117,7 @@ describe("Atendimentos longitudinais (integração)", () => {
 
   it("permite corrigir dados da visita antiga, mas não reescrever a ficha após atendimento posterior", async () => {
     const paciente = await db.paciente.create({ data: {
-      nome: "Paciente correção", dataNascimento: new Date("1990-01-01"), genero: "OUTRO", ficha: { create: {} },
+      nome: "Paciente correção", dataNascimento: new Date("1990-01-01"), genero: "MASCULINO", ficha: { create: {} },
     } });
     const primeiroMedico = await medico("correcao-a");
     const segundoMedico = await medico("correcao-b");
@@ -141,7 +141,7 @@ describe("Atendimentos longitudinais (integração)", () => {
 
   it("bloqueia iniciar ou cancelar agendamento de outro médico", async () => {
     const paciente = await db.paciente.create({ data: {
-      nome: "Paciente permissão", dataNascimento: new Date("1990-01-01"), genero: "OUTRO", ficha: { create: {} },
+      nome: "Paciente permissão", dataNascimento: new Date("1990-01-01"), genero: "MASCULINO", ficha: { create: {} },
     } });
     const responsavel = await medico("permissao-a");
     const outro = await medico("permissao-b");
@@ -155,7 +155,7 @@ describe("Atendimentos longitudinais (integração)", () => {
 
   it("serializa agendamentos concorrentes para o mesmo paciente", async () => {
     const paciente = await db.paciente.create({ data: {
-      nome: "Paciente concorrência", dataNascimento: new Date("1990-01-01"), genero: "OUTRO", ficha: { create: {} },
+      nome: "Paciente concorrência", dataNascimento: new Date("1990-01-01"), genero: "MASCULINO", ficha: { create: {} },
     } });
     const primeiro = await medico("concorrencia-a");
     const segundo = await medico("concorrencia-b");
@@ -171,7 +171,7 @@ describe("Atendimentos longitudinais (integração)", () => {
 
   it("usa a transferência de calendário ao trocar o médico responsável", async () => {
     const paciente = await db.paciente.create({ data: {
-      nome: "Paciente transferência", dataNascimento: new Date("1990-01-01"), genero: "OUTRO", ficha: { create: {} },
+      nome: "Paciente transferência", dataNascimento: new Date("1990-01-01"), genero: "MASCULINO", ficha: { create: {} },
     } });
     const primeiro = await medico("transferencia-a");
     const segundo = await medico("transferencia-b");

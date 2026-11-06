@@ -123,7 +123,7 @@ describe("Logs de auditoria", () => {
     await criarPacienteService.execute({
       nome: "Paciente Teste",
       dataNascimento: "1990-01-01",
-      genero: "feminino",
+      genero: "FEMININO",
     });
 
     const { items } = await logRepository.listar({ modulo: "PACIENTES", limit: 50, offset: 0 });

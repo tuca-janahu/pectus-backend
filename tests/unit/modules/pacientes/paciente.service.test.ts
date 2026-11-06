@@ -156,7 +156,7 @@ describe("CriarPacienteService", () => {
     const paciente = await service.execute({
       nome: "Ana",
       dataNascimento: "1990-01-01",
-      genero: "feminino",
+      genero: "FEMININO",
     });
 
     expect(paciente.nome).toBe("Ana");
@@ -174,7 +174,7 @@ describe("CriarPacienteService", () => {
     await service.execute({
       nome: "Ana",
       dataNascimento: "1990-01-01",
-      genero: "feminino",
+      genero: "FEMININO",
       municipioId: 1501402,
     });
 
@@ -191,7 +191,7 @@ describe("CriarPacienteService", () => {
       service.execute({
         nome: "Ana",
         dataNascimento: "1990-01-01",
-        genero: "feminino",
+        genero: "FEMININO",
         municipioId: 999999,
       }),
     ).rejects.toThrow("Município inválido");
@@ -239,7 +239,7 @@ describe("EnviarFotoPacienteService", () => {
       nome: "Ana",
       cpf: null,
       dataNascimento: new Date("1990-01-01"),
-      genero: "feminino",
+      genero: "FEMININO",
       municipio: null,
       telefones: [],
       fotoChave: null,

@@ -50,7 +50,7 @@ describe("Pacientes", () => {
     const paciente = await criarPacienteService.execute({
       nome: "Ana Beatriz",
       dataNascimento: "1990-05-10",
-      genero: "feminino",
+      genero: "FEMININO",
       municipioId: FIXTURE_MUNICIPIO_BELEM.codigo,
       telefones: ["91999999999"],
     });
@@ -65,7 +65,7 @@ describe("Pacientes", () => {
       criarPacienteService.execute({
         nome: "Ana Beatriz",
         dataNascimento: "1990-05-10",
-        genero: "feminino",
+        genero: "FEMININO",
         municipioId: 999999,
       }),
     ).rejects.toThrow("Município inválido");
@@ -77,7 +77,7 @@ describe("Pacientes", () => {
     const paciente = await criarPacienteService.execute({
       nome: "Ana Beatriz",
       dataNascimento: "1990-05-10",
-      genero: "feminino",
+      genero: "FEMININO",
     });
 
     const atualizado = await atualizarPacienteService.execute(paciente.id, {
@@ -93,7 +93,7 @@ describe("Pacientes", () => {
     const paciente = await criarPacienteService.execute({
       nome: "Ana Beatriz",
       dataNascimento: "1990-05-10",
-      genero: "feminino",
+      genero: "FEMININO",
       telefones: ["91988887777"],
     });
 
@@ -106,7 +106,7 @@ describe("Pacientes", () => {
     const paciente = await criarPacienteService.execute({
       nome: "Ana Beatriz",
       dataNascimento: "1990-05-10",
-      genero: "feminino",
+      genero: "FEMININO",
       telefones: ["91988887777"],
     });
 
@@ -119,7 +119,7 @@ describe("Pacientes", () => {
     const paciente = await criarPacienteService.execute({
       nome: "Ana Beatriz",
       dataNascimento: "1990-05-10",
-      genero: "feminino",
+      genero: "FEMININO",
     });
 
     const atualizado = await enviarFotoPacienteService.execute(paciente.id, {
@@ -140,7 +140,7 @@ describe("Pacientes", () => {
     const paciente = await criarPacienteService.execute({
       nome: "Ana Beatriz",
       dataNascimento: "1990-05-10",
-      genero: "feminino",
+      genero: "FEMININO",
     });
 
     const primeira = await enviarFotoPacienteService.execute(paciente.id, {
@@ -166,7 +166,7 @@ describe("Pacientes", () => {
     await criarPacienteService.execute({
       nome: "Primeiro Paciente",
       dataNascimento: "1990-05-10",
-      genero: "feminino",
+      genero: "FEMININO",
       cpf,
     });
 
@@ -175,7 +175,7 @@ describe("Pacientes", () => {
       await criarPacienteService.execute({
         nome: "Segundo Paciente",
         dataNascimento: "1991-06-11",
-        genero: "masculino",
+        genero: "MASCULINO",
         cpf,
       });
     } catch (erro) {

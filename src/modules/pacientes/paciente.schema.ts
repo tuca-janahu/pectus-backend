@@ -10,7 +10,7 @@ export const criarPacienteSchema = z.object({
     .regex(/^\d{11}$/)
     .optional(),
   dataNascimento: z.coerce.date(),
-  genero: z.string().trim().min(1).max(50),
+  genero: z.enum(["MASCULINO", "FEMININO"]),
   municipioId: z.number().int().positive().optional(),
   telefones: z.array(telefoneSchema).max(10).optional().default([]),
 });
@@ -23,7 +23,7 @@ export const atualizarPacienteSchema = z.object({
     .regex(/^\d{11}$/)
     .optional(),
   dataNascimento: z.coerce.date().optional(),
-  genero: z.string().trim().min(1).max(50).optional(),
+  genero: z.enum(["MASCULINO", "FEMININO"]).optional(),
   municipioId: z.number().int().positive().optional(),
   // Sem .default([]) de propósito: se `telefones` não vier no corpo do PATCH, deve
   // permanecer `undefined` (não mexe na lista atual) — um array vazio explícito ([])
