@@ -8,6 +8,7 @@ import localidadesRouter from "./modules/localidades/localidades.routes";
 import logsRouter from "./modules/logs/logs.routes";
 import pacientesRouter from "./modules/pacientes/pacientes.routes";
 import notificacoesRouter from "./modules/notificacoes/notificacoes.routes";
+import dashboardRouter from "./modules/dashboard/dashboard.routes";
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
@@ -28,6 +29,7 @@ app.use("/localidades", localidadesRouter);
 app.use("/logs", logsRouter);
 app.use("/pacientes", pacientesRouter);
 app.use("/notificacoes", notificacoesRouter);
+app.use("/dashboard", dashboardRouter);
 
 app.get("/health", (_req, res) => {
   res.status(200).json({ status: "ok" });

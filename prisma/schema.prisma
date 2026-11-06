@@ -142,7 +142,7 @@ model Paciente {
   cpf            String?           @unique @db.VarChar(11)
   nome           String            @db.VarChar(255)
   dataNascimento DateTime          @map("data_nascimento") @db.Date
-  genero         String            @db.VarChar(50)
+  genero         GeneroPaciente
   fotoChave      String?           @map("foto_chave") @db.VarChar(512)
   criadoEm       DateTime          @default(now()) @map("criado_em") @db.Timestamptz(6)
   atualizadoEm   DateTime          @updatedAt @map("atualizado_em") @db.Timestamptz(6)
@@ -306,6 +306,11 @@ enum MotivoEncerramento {
   ALTA
   ABANDONO
   OBITO
+}
+
+enum GeneroPaciente {
+  MASCULINO
+  FEMININO
 }
 
 /// Tokens de integração com o Google Calendar do médico/usuário.
