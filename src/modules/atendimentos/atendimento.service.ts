@@ -79,7 +79,12 @@ export class AtendimentoService {
     }
     return this.prisma.atendimento.findMany({
       where: {
-        ficha: filtro.pacienteId ? { pacienteId: filtro.pacienteId } : undefined,
+        ficha: filtro.pacienteId || filtro.estadoCodigo ? {
+          pacienteId: filtro.pacienteId,
+          paciente: filtro.estadoCodigo ? {
+            municipio: { estadoCodigo: filtro.estadoCodigo, codigo: filtro.municipioCodigo },
+          } : undefined,
+        } : undefined,
         medicoId: filtro.medicoId,
         status: filtro.status,
         dataHoraPrevista: filtro.de || filtro.ate ? { gte: filtro.de, lte: filtro.ate } : undefined,

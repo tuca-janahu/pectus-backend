@@ -1,5 +1,5 @@
 import { Prisma, type PrismaClient } from "../../generated/prisma/client";
-import type { DashboardFiltro } from "./dashboard.schema";
+import type { DashboardFiltro, DashboardMapaFiltro } from "./dashboard.schema";
 
 type Contagem = { chave: string; total: bigint };
 type Serie = { periodo: Date; status: string; total: bigint };
@@ -10,16 +10,23 @@ type Clinica = {
   sequelas: bigint; medicamentos: bigint; laringoscopia: bigint;
 };
 type Regiao = { codigo: number | null; municipio: string | null; grupo: string; total: bigint };
+type Localidade = { municipioCodigo: number | null; estadoCodigo: number | null; total: bigint };
 
 export class DashboardRepository {
   constructor(private readonly db: PrismaClient) {}
 
   async consultar(filtro: DashboardFiltro) {
-    const { de, ate, medicoId, granularidade } = filtro;
+    const { de, ate, medicoId, granularidade, estadoCodigo, municipioCodigo } = filtro;
     const periodo = Prisma.sql`
       a.data_hora_prevista >= (${de}::date::timestamp AT TIME ZONE 'America/Sao_Paulo')
       AND a.data_hora_prevista < ((${ate}::date + 1)::timestamp AT TIME ZONE 'America/Sao_Paulo')
-      AND (${medicoId ?? null}::integer IS NULL OR a.medico_id = ${medicoId ?? null}::integer)`;
+      AND (${medicoId ?? null}::integer IS NULL OR a.medico_id = ${medicoId ?? null}::integer)
+      AND (${estadoCodigo ?? null}::integer IS NULL OR EXISTS (
+        SELECT 1 FROM fichas fx JOIN pacientes px ON px.id = fx.paciente_id
+        JOIN municipios mx ON mx.codigo = px.municipio_id
+        WHERE fx.id = a.ficha_id AND mx.estado_codigo = ${estadoCodigo ?? null}::integer
+          AND (${municipioCodigo ?? null}::integer IS NULL OR mx.codigo = ${municipioCodigo ?? null}::integer)
+      ))`;
     const coorte = Prisma.sql`
       SELECT DISTINCT f.paciente_id
       FROM atendimentos a JOIN fichas f ON f.id = a.ficha_id
@@ -72,5 +79,19 @@ export class DashboardRepository {
         WHERE p.id IN (${coorte}) GROUP BY m.codigo, m.nome, grupo ORDER BY total DESC, m.nome`,
     ]);
     return { status, serie, procedimentos, idades, generos, clinica: clinica[0], regiao };
+  }
+
+  async consultarMapa({ de, ate, medicoId }: DashboardMapaFiltro) {
+    const coorte = Prisma.sql`
+      SELECT DISTINCT f.paciente_id
+      FROM atendimentos a JOIN fichas f ON f.id = a.ficha_id
+      WHERE a.data_hora_prevista >= (${de}::date::timestamp AT TIME ZONE 'America/Sao_Paulo')
+        AND a.data_hora_prevista < ((${ate}::date + 1)::timestamp AT TIME ZONE 'America/Sao_Paulo')
+        AND (${medicoId ?? null}::integer IS NULL OR a.medico_id = ${medicoId ?? null}::integer)
+        AND a.status = 'CONCLUIDA'`;
+    return this.db.$queryRaw<Localidade[]>`
+      SELECT p.municipio_id AS "municipioCodigo", m.estado_codigo AS "estadoCodigo", COUNT(*) AS total
+      FROM pacientes p LEFT JOIN municipios m ON m.codigo = p.municipio_id
+      WHERE p.id IN (${coorte}) GROUP BY p.municipio_id, m.estado_codigo`;
   }
 }

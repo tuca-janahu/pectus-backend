@@ -97,6 +97,8 @@ export const situacaoFichaSchema = z.object({
 export const listarAtendimentosSchema = z.object({
   pacienteId: z.coerce.number().int().positive().optional(),
   medicoId: z.coerce.number().int().positive().optional(),
+  estadoCodigo: z.coerce.number().int().positive().optional(),
+  municipioCodigo: z.coerce.number().int().positive().optional(),
   status: z.enum(["AGENDADA", "EM_PREENCHIMENTO", "CONCLUIDA", "CANCELADA"]).optional(),
   de: z.coerce.date().optional(),
   ate: z.coerce.date().optional(),

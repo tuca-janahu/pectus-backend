@@ -1,6 +1,6 @@
 import type { PrismaClient } from "../../generated/prisma/client";
 import { DashboardRepository } from "./dashboard.repository";
-import type { DashboardFiltro } from "./dashboard.schema";
+import type { DashboardFiltro, DashboardMapaFiltro } from "./dashboard.schema";
 
 const STATUS = ["AGENDADA", "EM_PREENCHIMENTO", "CONCLUIDA", "CANCELADA"] as const;
 const FAIXAS = ["0–17", "18–29", "30–44", "45–59", "60+"];
@@ -32,6 +32,35 @@ export class DashboardService {
       select: { id: true, conta: { select: { nome: true } } },
       orderBy: { conta: { nome: "asc" } },
     });
+  }
+
+  async localidadeValida(estadoCodigo?: number, municipioCodigo?: number) {
+    if (!estadoCodigo) return true;
+    if (municipioCodigo) {
+      return Boolean(await this.db.municipio.findFirst({ where: { codigo: municipioCodigo, estadoCodigo }, select: { codigo: true } }));
+    }
+    return Boolean(await this.db.estado.findUnique({ where: { codigo: estadoCodigo }, select: { codigo: true } }));
+  }
+
+  async mapa(filtro: DashboardMapaFiltro) {
+    const [contagens, estados, municipios] = await Promise.all([
+      this.repository.consultarMapa(filtro),
+      this.db.estado.findMany({ select: { codigo: true, sigla: true, nome: true }, orderBy: { nome: "asc" } }),
+      filtro.estadoCodigo
+        ? this.db.municipio.findMany({ where: { estadoCodigo: filtro.estadoCodigo }, select: { codigo: true, nome: true }, orderBy: { nome: "asc" } })
+        : Promise.resolve([]),
+    ]);
+    const porMunicipio = new Map(contagens.map((item) => [item.municipioCodigo, numero(item.total)]));
+    const porEstado = new Map<number, number>();
+    for (const item of contagens) {
+      if (item.estadoCodigo !== null) porEstado.set(item.estadoCodigo, (porEstado.get(item.estadoCodigo) ?? 0) + numero(item.total));
+    }
+    return {
+      totalPacientes: contagens.reduce((soma, item) => soma + numero(item.total), 0),
+      semLocalidade: porMunicipio.get(null) ?? 0,
+      estados: estados.map((item) => ({ ...item, total: porEstado.get(item.codigo) ?? 0 })),
+      municipios: municipios.map((item) => ({ ...item, total: porMunicipio.get(item.codigo) ?? 0 })),
+    };
   }
 
   async resumo(filtro: DashboardFiltro) {

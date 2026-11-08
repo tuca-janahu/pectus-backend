@@ -2,7 +2,7 @@ import { Router } from "express";
 import { ZodError } from "zod";
 import { prisma } from "../../db/prisma";
 import { authenticate, authorize } from "../../middleware/authMiddleware";
-import { dashboardFiltroSchema } from "./dashboard.schema";
+import { dashboardFiltroSchema, dashboardMapaFiltroSchema } from "./dashboard.schema";
 import { DashboardService } from "./dashboard.service";
 
 const router = Router();
@@ -21,10 +21,26 @@ router.get("/medicos", async (_req, res) => {
 router.get("/resumo", async (req, res) => {
   try {
     const filtro = dashboardFiltroSchema.parse(req.query);
+    if (!await service.localidadeValida(filtro.estadoCodigo, filtro.municipioCodigo)) {
+      return res.status(400).json({ error: "Município ou estado inválido" });
+    }
     res.json(await service.resumo(filtro));
   } catch (error) {
     if (error instanceof ZodError) return res.status(400).json({ error: error.issues[0]?.message ?? "Filtro inválido" });
     res.status(500).json({ error: "Não foi possível carregar o dashboard" });
+  }
+});
+
+router.get("/mapa", async (req, res) => {
+  try {
+    const filtro = dashboardMapaFiltroSchema.parse(req.query);
+    if (!await service.localidadeValida(filtro.estadoCodigo)) {
+      return res.status(400).json({ error: "Estado inválido" });
+    }
+    res.json(await service.mapa(filtro));
+  } catch (error) {
+    if (error instanceof ZodError) return res.status(400).json({ error: error.issues[0]?.message ?? "Filtro inválido" });
+    res.status(500).json({ error: "Não foi possível carregar o mapa" });
   }
 });
 
